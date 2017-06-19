@@ -1,5 +1,5 @@
 ---
-title: "02_cluster_variables"
+title: "Cluster Variables"
 author: "Orla"
 date: "June 19, 2017"
 output: html_document
@@ -43,11 +43,14 @@ var_config <- rbind(var_config, c("label", "outcome"))
 var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
 df[,var_inc_list$Column] -> vdf
 
+vvdf <-as.data.frame(t(vdf))
+
 ```
 
 
 #Clustering 
-Hierarchical agglomerative clustering is proposed as the chosen method for clustering. Pearson's correlation is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. 
+## Methods
+Hierarchical agglomerative clustering is proposed as the chosen method for clustering. Pearson's correlation is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. The linkage method chosen was "complete". *Note that there are several options for linkage and this could be varied*. The following post describes each linkage method (https://stats.stackexchange.com/questions/195446/choosing-the-right-linkage-method-for-hierarchical-clustering). 
 
 
 
@@ -56,10 +59,13 @@ cmat_raw<-cor(vdf,method="pearson")
 cmat_raw[is.na(cmat_raw)]=0
 dissimilarity <- 1 - abs(cmat_raw)
 distance <- as.dist(dissimilarity)
-hc <- hclust(distance, method = "ward.D")
+hc <- hclust(distance, method = "complete")
 ```
 
+## Number of clusters
+Setting the number of clusters is anticipated to be the key challenge. There are a number of metrics which can be used to drive selection and these should be balanced with domain knowledge. For example, a metric that suggests the tree should be cut at a point where several hundred variables are grouped in a single cluster is likely to be insufficiently granular. Additionally, it will be important to consider where variables are being grouped together because they are extremely sparse or whether they are grouped because they both represent a similar clinical event. 
 
+```{r}
 
 wss_all <- NULL
 c_seq <-  2^seq(0, 9, 0.1)
@@ -69,6 +75,10 @@ for(j in c_seq){
 }
 
 plot(c_seq,wss_all)
+```
+
+```{r}
+
 
 #silhouette 
 # c_seq <-  2^seq(0, 7, 0.1)
@@ -79,16 +89,22 @@ plot(c_seq,wss_all)
 # }
 # plot(c_seq, silh_all)
 
+```
+Assuming the number of clusters has been selected as 250. **EDIT - please manually insert the final number of clusters before proceeding.**
 
-#Selecting the number of clusters can be informed by a number of metrics. 
-#The elbow of the WSS curve is currently used to manaually inform the selection. 
-
-Nc <-75
+```{r}
+Nc <-250
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 
+```
 
-# aggregate predictors: mean ----------------------------------------------
+
+
+#Aggregate variables 
+Variables that belong to the same cluster can be aggregated using various summary metrics. In this case the 'sum' is selected. This metric is an intuitive choice when considering variables which have the same scale for e.g. freq in terms of years. Variables which count specialty visits should be perhaps be converted to frequency instead of counts to preserve the scale. 
+
+```{r}
 
 cvdf <- cbind(vvdf, hc_cut)
 
@@ -102,25 +118,13 @@ ccvdf %>%
   round(.,2) %>% 
   cbind(as.data.frame(table(hc_cut)),.) -> clust_prev
 
- 
-
-#correlation matrix comparison for exploring the clustering
-cmat_raw<-cor(vdf,method="pearson")
-
-ut <- upper.tri(cmat_raw)
-cmat_raw_flat <- as.data.frame(round(cmat_raw[ut],2))
+```
 
 
-cmat_clus<-cor(as.matrix(t(ccvdf)))
-ut <- upper.tri(cmat_clus)
-cmat_clus_flat <- as.data.frame(round(cmat_clus[ut],2))
-
-table(cmat_raw_flat$`round(cmat_raw[ut], 2)`)
-sum(cmat_raw_flat$`round(cmat_raw[ut], 2)`>0.8, na.rm = TRUE)
-table(cmat_clus_flat$`round(cmat_clus[ut], 2)`)
-sum(cmat_clus_flat$`round(cmat_clus[ut], 2)` >0.8, na.rm = TRUE)
+```{r}
+#write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
+#write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+#write_rds(vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_clust_input.rds"))
+```
 
 
-write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
-write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
-write_rds(vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_clust_input.rds"))
