@@ -1,0 +1,95 @@
+---
+title: "Preprocess data for clustering"
+author: "Orla"
+date: "June 16, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(caTools)
+```
+
+
+#Paths and files.
+
+Set up the paths and filenames of the positive and negative cohorts. **Note the negative cohort is not yet available.** Here we assume that positive cohort which are read in have not been selected using the finalised set of inclusion and exclusion criteria.
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+pos_data_file <- stringr::str_c(path, "/01_data/Positive_Cohort_v1_20170425.csv")
+#neg_data_file <- stringr::str_c(path, "/01_data/<neg cohort file name..csv")
+
+var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+```
+
+#Read data
+The var_config file is read in to select the variables that should be considered for feature selection. 
+```{r}
+var_config <- readr::read_csv(var_config_file)
+```
+Read the data for the positive cohort. Set missing values to zero. Finally, create a new column the counts the number of treatments for PPP based on potassium and 
+```{r}
+df_pos <- read.csv(pos_data_file, stringsAsFactors = FALSE)
+df_pos[is.na(df_pos)] <-0
+df_pos$num_pos_act <- df_pos$D26 + df_pos$D27
+```
+
+#Filter data
+Apply inclusion criteria to the positive cohort. 
+
+```{r}
+df_pos %>%
+  filter(as.Date(as.character(D07),format="%m/%d/%Y") > as.Date("01/01/2012",format="%m/%d/%Y")) %>%
+  filter(D02 > 0) %>%
+  filter((D03 == "Y") & (D04 == "Y")) %>%
+  filter((D01 == "M") | (D01 == "F")) %>%
+  filter(D09 >= 24) -> df_pos
+```
+
+For the later modelling stage, a set of positive patients with more strict criteria will be selected - these patients will be referred as the narrow cohort. For feature selection, a less strictly defined set of PPP patients will be selected and these will be refered to as the broad cohort. To prevent leakage of information from the feature selection stage and modelling stage, a unique set of patients will be used for each. That is, any patients in the narrow cohort will be removed from the broad cohort to form the broad prime cohort. 
+ **EDIT: This will need to updated so that the exclusion criteria are also applied.**
+```{r}
+#broad cohort
+df_pos %>%
+  filter((D11 == "Y") | ((D12 == "Y") & (D20 == "Y"))) -> x_pos_c_dt
+
+#narrow cohort
+df_pos %>%
+  filter((D13 >=3 ) | ((D11 == "Y") & (num_pos_act>=2))) -> x_pos_model
+
+#broad prime cohort
+x_pos_clustering <- anti_join(x_pos_c_dt, x_pos_model, by = "PATIENT_ID")
+```
+
+**EDIT: Negative patients are not yet available. Half of the positive patients are randonly assigned to the negative cohort.** 
+```{r}
+x_clustering <- x_pos_clustering
+x_clustering$label <- sample(0:1,nrow(x_clustering), replace=TRUE)
+```
+
+
+#Training and test splits
+Partition the data sets into training and test splits. 
+```{r}
+itr <- sample.split(x_clustering$label, SplitRatio = 0.75)
+x_clustering_tr <- x_clustering[itr,]
+x_clustering_ts <- x_clustering[!itr,]
+```
+#Write out the clustering data sets. 
+```{r}
+write.csv(x_clustering, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"))
+write.csv(filter(x_clustering,x_clustering$label==0), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_neg_clust.csv"))
+write.csv(filter(x_clustering,x_clustering$label==1), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_pos_clust.csv"))
+write.csv(x_clustering, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"))
+write.csv(filter(x_clustering,x_clustering$label==0), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_neg_clust.csv"))
+write.csv(filter(x_clustering,x_clustering$label==1), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_pos_clust.csv"))
+```
+
+

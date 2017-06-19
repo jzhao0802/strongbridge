@@ -1,0 +1,126 @@
+---
+title: "02_cluster_variables"
+author: "Orla"
+date: "June 19, 2017"
+output: html_document
+---
+
+
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(cluster)
+```
+
+
+
+#Set up paths and read data 
+
+Source a function file. 
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+```
+
+Read the training data.  
+```{r}
+df <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+
+```
+
+Read the var_config file which will inform which varaibles should be used for clustering. 
+
+```{r}
+var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+var_config <- readr::read_csv(var_config_file)
+var_config <- rbind(var_config, c("label", "outcome"))
+
+var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
+df[,var_inc_list$Column] -> vdf
+
+```
+
+
+#Clustering 
+Hierarchical agglomerative clustering is proposed as the chosen method for clustering. Pearson's correlation is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. 
+
+
+
+```{r}
+cmat_raw<-cor(vdf,method="pearson")
+cmat_raw[is.na(cmat_raw)]=0
+dissimilarity <- 1 - abs(cmat_raw)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance, method = "ward.D")
+```
+
+
+
+wss_all <- NULL
+c_seq <-  2^seq(0, 9, 0.1)
+
+for(j in c_seq){
+  wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
+}
+
+plot(c_seq,wss_all)
+
+#silhouette 
+# c_seq <-  2^seq(0, 7, 0.1)
+# silh_all <- NULL
+# for(j in c_seq){
+#   ss <- silhouette(cutree(hc, k=j),distance)
+#   silh_all <- rbind(silh_all, median(ss[,3]))
+# }
+# plot(c_seq, silh_all)
+
+
+#Selecting the number of clusters can be informed by a number of metrics. 
+#The elbow of the WSS curve is currently used to manaually inform the selection. 
+
+Nc <-75
+hc_cut <- cutree(hc, k=Nc)
+table(hc_cut)
+
+
+# aggregate predictors: mean ----------------------------------------------
+
+cvdf <- cbind(vvdf, hc_cut)
+
+cvdf %>% 
+  group_by(hc_cut) %>% 
+  summarise_each(funs(sum)) -> ccvdf
+
+ccvdf %>% 
+  group_by(hc_cut) %>% 
+  rowMeans(.) %>%
+  round(.,2) %>% 
+  cbind(as.data.frame(table(hc_cut)),.) -> clust_prev
+
+ 
+
+#correlation matrix comparison for exploring the clustering
+cmat_raw<-cor(vdf,method="pearson")
+
+ut <- upper.tri(cmat_raw)
+cmat_raw_flat <- as.data.frame(round(cmat_raw[ut],2))
+
+
+cmat_clus<-cor(as.matrix(t(ccvdf)))
+ut <- upper.tri(cmat_clus)
+cmat_clus_flat <- as.data.frame(round(cmat_clus[ut],2))
+
+table(cmat_raw_flat$`round(cmat_raw[ut], 2)`)
+sum(cmat_raw_flat$`round(cmat_raw[ut], 2)`>0.8, na.rm = TRUE)
+table(cmat_clus_flat$`round(cmat_clus[ut], 2)`)
+sum(cmat_clus_flat$`round(cmat_clus[ut], 2)` >0.8, na.rm = TRUE)
+
+
+write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
+write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+write_rds(vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_clust_input.rds"))
