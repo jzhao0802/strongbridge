@@ -32,7 +32,7 @@ var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
 #Read data
 The var_config file is read in to select the variables that should be considered for feature selection. 
 ```{r}
-var_config <- readr::read_csv(var_config_file)
+var_config <- read.csv(var_config_file)
 ```
 Read the data for the positive cohort. Set missing values to zero. Finally, create a new column the counts the number of treatments for PPP based on potassium and 
 ```{r}
@@ -84,10 +84,10 @@ x_clustering_ts <- x_clustering[!itr,]
 ```
 #Write out the clustering data sets. 
 ```{r}
-write.csv(x_clustering, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"))
+write.csv(x_clustering_tr, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"))
 write.csv(filter(x_clustering,x_clustering$label==0), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_neg_clust.csv"))
 write.csv(filter(x_clustering,x_clustering$label==1), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_pos_clust.csv"))
-write.csv(x_clustering, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"))
+write.csv(x_clustering_ts, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"))
 write.csv(filter(x_clustering,x_clustering$label==0), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_neg_clust.csv"))
 write.csv(filter(x_clustering,x_clustering$label==1), paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_pos_clust.csv"))
 ```

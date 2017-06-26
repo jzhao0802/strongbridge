@@ -65,10 +65,14 @@ hc <- hclust(distance, method = "complete")
 ## Number of clusters
 Setting the number of clusters is anticipated to be the key challenge. There are a number of metrics which can be used to drive selection and these should be balanced with domain knowledge. For example, a metric that suggests the tree should be cut at a point where several hundred variables are grouped in a single cluster is likely to be insufficiently granular. Additionally, it will be important to consider where variables are being grouped together because they are extremely sparse or whether they are grouped because they both represent a similar clinical event. 
 
+Here two different metrics are presented - the within sum of squares and the silhouette width. 
+
+The within sum of squares is the sum of squared difference from each data point to the centroid of the cluster. The objective is to minimise this distance and therefore the elbow of this curve can be chosen to the select the number of clusters. 
+
 ```{r}
 
 wss_all <- NULL
-c_seq <-  2^seq(0, 9, 0.1)
+c_seq <-  2^seq(1, 10, 0.25)
 
 for(j in c_seq){
   wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
@@ -80,20 +84,20 @@ plot(c_seq,wss_all)
 ```{r}
 
 
-#silhouette 
-# c_seq <-  2^seq(0, 7, 0.1)
-# silh_all <- NULL
-# for(j in c_seq){
-#   ss <- silhouette(cutree(hc, k=j),distance)
-#   silh_all <- rbind(silh_all, median(ss[,3]))
-# }
-# plot(c_seq, silh_all)
+#silhouette
+c_seq <-  2^seq(1, 10, 0.1)
+silh_all <- NULL
+for(j in c_seq){
+  ss <- silhouette(cutree(hc, k=j),distance)
+  silh_all <- rbind(silh_all, median(ss[,3]))
+}
+plot(c_seq, silh_all)
 
 ```
-Assuming the number of clusters has been selected as 300. **EDIT - please manually insert the final number of clusters before proceeding.**
+Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
-Nc <-300
+Nc <-400
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 
@@ -123,13 +127,15 @@ ccvdf %>%
   cbind(as.data.frame(table(hc_cut)),.) -> clust_prev
 ```
 
+#Write out results
 
+The results of the clustering are stored in two forms - the aggregated variables per cluster and the cluster membership for the full hierarchical tree and for the tree cut at a set number of clusters. 
 
 
 ```{r}
-#write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
-#write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
-#write_rds(vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_clust_input.rds"))
+write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
+write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+write_rds(ccvdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "x_clustering_tr_agg_sum.rds"))
 ```
 
 
