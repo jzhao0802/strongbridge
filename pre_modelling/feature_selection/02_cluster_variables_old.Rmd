@@ -1,0 +1,141 @@
+---
+title: "Cluster Variables"
+author: "Orla"
+date: "June 19, 2017"
+output: html_document
+---
+
+
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(cluster)
+```
+
+
+
+#Set up paths and read data 
+
+Source a function file. 
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+```
+
+Read the training data.  
+```{r}
+df <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+
+```
+
+Read the var_config file which will inform which varaibles should be used for clustering. 
+
+```{r}
+var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+var_config <- readr::read_csv(var_config_file)
+var_config <- rbind(var_config, c("label", "outcome"))
+
+var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
+df[,var_inc_list$Column] -> vdf
+
+vvdf <-as.data.frame(t(vdf))
+
+```
+
+
+#Clustering 
+## Methods
+Hierarchical agglomerative clustering is proposed as the chosen method for clustering. Pearson's correlation is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. The linkage method chosen was "complete". *Note that there are several options for linkage and this could be varied*. The following post describes each linkage method (https://stats.stackexchange.com/questions/195446/choosing-the-right-linkage-method-for-hierarchical-clustering). 
+
+
+
+```{r}
+cmat_raw<-cor(vdf,method="pearson")
+cmat_raw[is.na(cmat_raw)]=0
+dissimilarity <- 1 - abs(cmat_raw)
+distance <- as.dist(dissimilarity)
+hc <- hclust(distance, method = "single")
+```
+
+## Number of clusters
+Setting the number of clusters is anticipated to be the key challenge. There are a number of metrics which can be used to drive selection and these should be balanced with domain knowledge. For example, a metric that suggests the tree should be cut at a point where several hundred variables are grouped in a single cluster is likely to be insufficiently granular. Additionally, it will be important to consider where variables are being grouped together because they are extremely sparse or whether they are grouped because they both represent a similar clinical event. 
+
+Here two different metrics are presented - the within sum of squares and the silhouette width. 
+
+The within sum of squares is the sum of squared difference from each data point to the centroid of the cluster. The objective is to minimise this distance and therefore the elbow of this curve can be chosen to the select the number of clusters. 
+
+```{r}
+
+wss_all <- NULL
+c_seq <-  2^seq(1, 10, 0.25)
+
+for(j in c_seq){
+  wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
+}
+
+plot(c_seq,wss_all)
+```
+
+```{r}
+
+
+#silhouette
+c_seq <-  2^seq(1, 10, 0.1)
+silh_all <- NULL
+for(j in c_seq){
+  ss <- silhouette(cutree(hc, k=j),distance)
+  silh_all <- rbind(silh_all, median(ss[,3]))
+}
+plot(c_seq, silh_all)
+
+```
+Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
+
+```{r}
+Nc <-400
+hc_cut <- cutree(hc, k=Nc)
+table(hc_cut)
+
+```
+
+
+
+#Aggregate variables 
+Variables that belong to the same cluster can be aggregated using various summary metrics. In this case the 'sum' is selected. This metric is an intuitive choice when considering variables which have the same scale for e.g. freq in terms of years. Variables which count specialty visits should be perhaps be converted to frequency instead of counts to preserve the scale. Alternatively the aggregate could be represented by the centroid of the cluster or via PCA. 
+
+```{r}
+
+cvdf <- cbind(vvdf, hc_cut)
+
+cvdf %>% 
+  group_by(hc_cut) %>% 
+  summarise_each(funs(sum)) -> ccvdf
+```
+
+Following aggregation, the mean of the newly constructed features can be computed to provide some inight into the sparseness of the data in each cluster. The purpose is to flag clusters which contain variables with very low information content and to aid interpretation downstream. 
+
+```{r}
+ccvdf %>% 
+  group_by(hc_cut) %>% 
+  rowMeans(.) %>%
+  round(.,2) %>% 
+  cbind(as.data.frame(table(hc_cut)),.) -> clust_prev
+```
+
+#Write out results
+
+The results of the clustering are stored in two forms - the aggregated variables per cluster and the cluster membership for the full hierarchical tree and for the tree cut at a set number of clusters. 
+
+
+```{r}
+write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
+write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+write_rds(ccvdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "x_clustering_tr_agg_sum.rds"))
+```
+
+

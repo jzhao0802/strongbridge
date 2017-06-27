@@ -1,0 +1,86 @@
+---
+title: "Group LASSO"
+author: "Orla"
+date: "June 20, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(grpreg)
+```
+
+
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+```
+
+
+#Read data 
+Read the training and test data. 
+```{r}
+df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+
+```
+
+Extract the appropriate variables using the var_config file. 
+
+```{r}
+var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+var_config <- readr::read_csv(var_config_file)
+var_config <- rbind(var_config, c("label", "outcome"))
+
+var_config %>% filter((Type == "numerical") | (Type == "categorical") | (Type == "outcome")) -> var_inc_list
+df_tr[,var_inc_list$Column] -> vdf_tr
+df_ts[,var_inc_list$Column] -> vdf_ts
+```
+
+Read in the cluster memberships. These will serve as the groupings for group LASSO. 
+
+```{r}
+hc <- read_rds(paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+```
+
+
+#Group LASSO model
+
+Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing. I picked the grpreg package instead of gglasso as it was faster to run. 
+```{r}
+#tr_data <- data.matrix(dplyr::select(vdf_tr, -label))
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
+grpl.fit <- grpreg(dplyr::select(vdf_tr, -label), vdf_tr$label, hc, penalty = "grLasso",family="binomial")
+
+```
+
+Once the model has been fitted, the weights of the coefficients can plotted against lambda. 
+```{r}
+plot(grpl.fit)
+
+```
+
+
+```{r}
+#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+
+```
+
+
+Use the trained model to provide predictions on the test set. This requires that lambda is either set to some default value or optimised using CV. 
+
+```{r}
+#ts_data <- data.matrix(dplyr::select(vdf_ts, -label))
+ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
+grpl.pred_ts <- predict(grpl.fit,ts_data, type="response", lambda = 0.001 )
+``` 
+
+
+
+
