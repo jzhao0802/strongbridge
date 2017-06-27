@@ -50,16 +50,20 @@ vvdf <-as.data.frame(t(vdf))
 
 #Clustering 
 ## Methods
-Hierarchical agglomerative clustering is proposed as the chosen method for clustering. Pearson's correlation is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. The linkage method chosen was "complete". *Note that there are several options for linkage and this could be varied*. The following post describes each linkage method (https://stats.stackexchange.com/questions/195446/choosing-the-right-linkage-method-for-hierarchical-clustering). 
+Hierarchical agglomerative clustering is proposed as the chosen method for clustering. In hierarchical clustering each variable initiates in its own cluster and pairs of clusters are merged during iterations. Spearman's rho is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. *Note: if all variables are continuous you might like to use Pearon's correlation coefficient. 
+
+The chosen linkage method was "average". Average-linkage calculates the distance between clusters as the average pairwise distance between members of the respective clusters.  
+
+*Note that there are several options for linkage and this could be varied*. The following post describes each linkage method: (https://stats.stackexchange.com/questions/195446/choosing-the-right-linkage-method-for-hierarchical-clustering). 
 
 
 
 ```{r}
-cmat_raw<-cor(vdf,method="pearson")
+cmat_raw<-cor(vdf,method="spearman")
 cmat_raw[is.na(cmat_raw)]=0
 dissimilarity <- 1 - abs(cmat_raw)
 distance <- as.dist(dissimilarity)
-hc <- hclust(distance, method = "complete")
+hc <- hclust(distance, method = "average")
 ```
 
 ## Number of clusters
@@ -80,6 +84,10 @@ for(j in c_seq){
 
 plot(c_seq,wss_all)
 ```
+
+The silhouette width measures how similar a variable is to it's own cluster compared to other clusters. The silhouette width can range from -1 to 1, where values approaching 1 suggest a good fit and values approaching -1 suggest that the variable has not been assigned to the optimal cluster. It is calculated as 
+$$s(i) = \frac{b(i) - a(i)}{max(a(i), b(i))}$$
+where a(i) is the average distance between i and all all variables in the same cluster and b(i) is the lowest distance of i to any other cluster of which it is not a member. 
 
 ```{r}
 
