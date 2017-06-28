@@ -61,6 +61,9 @@ The chosen linkage method was "average". Average-linkage calculates the distance
 ```{r}
 cmat_raw<-cor(vdf,method="spearman")
 cmat_raw[is.na(cmat_raw)]=0
+hist(cmat_raw)
+```
+```{r}
 dissimilarity <- 1 - abs(cmat_raw)
 distance <- as.dist(dissimilarity)
 hc <- hclust(distance, method = "average")
@@ -100,17 +103,16 @@ for(j in c_seq){
   silh_all <- rbind(silh_all, median(ss[,3]))
 }
 plot(c_seq, silh_all)
-
 ```
+
 Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
 Nc <-400
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
-
 ```
-
+ 
 
 
 #Aggregate variables 
@@ -122,17 +124,30 @@ cvdf <- cbind(vvdf, hc_cut)
 
 cvdf %>% 
   group_by(hc_cut) %>% 
-  summarise_each(funs(sum)) -> ccvdf
+  summarise_each(funs(mean)) -> ccvdf
 ```
 
-Following aggregation, the mean of the newly constructed features can be computed to provide some inight into the sparseness of the data in each cluster. The purpose is to flag clusters which contain variables with very low information content and to aid interpretation downstream. 
+Following aggregation, the mean of the aggregated variables can be computed to provide some inight into the sparseness of the data in each cluster. The purpose is to flag clusters which contain variables with very low information content and to aid interpretation downstream. Additionally, the mean of each cluster is printed to a csv file along with the names of the variables contained in each cluster. 
 
 ```{r}
-ccvdf %>% 
+mu_mu_cluster <- cvdf %>% 
   group_by(hc_cut) %>% 
-  rowMeans(.) %>%
-  round(.,2) %>% 
-  cbind(as.data.frame(table(hc_cut)),.) -> clust_prev
+  summarise_each(funs(mean)) %>%
+  rowMeans(.) %>% 
+  round(.,3)
+
+
+clust_memb <- cvdf %>% 
+  (function(x) {
+    tibble(row_name = row.names(x),
+           hc_cut = x$hc_cut)
+  })(.) %>%
+  mutate(fake = seq_len(nrow(.))) %>%
+  spread(hc_cut, row_name) %>%
+  dplyr::select(-fake) %>%
+  mutate_all(function(x) x[order(x)]) %>% 
+  rbind(mu_mu_cluster, .)
+
 ```
 
 #Write out results
@@ -144,6 +159,7 @@ The results of the clustering are stored in two forms - the aggregated variables
 write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
 write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
 write_rds(ccvdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "x_clustering_tr_agg_sum.rds"))
+write_csv(clust_memb, paste0(path, "/01_data/cluster_dfs/strongbridge/", "clust_memb_table.csv"), na="")
 ```
 
 
