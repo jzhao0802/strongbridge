@@ -75,7 +75,11 @@ join_proc$Pos_trigger_rate <- join_proc$Positive_count/pos
 join_spec$Neg_trigger_rate <- join_spec$Negative_count/negs
 join_spec$Pos_trigger_rate <- join_spec$Positive_count/pos 
 
-write_csv(join_spec, paste0(data_loc, "join_spec.csv"))
+
+join_diag <- read.csv(paste0(loc, "join_diag4.csv"))
+join_proc <- read.csv(paste0(loc, "join_proc.csv"))
+join_gpi <- read.csv(paste0(loc, "join_gpi.csv"))
+join_spec <- read.csv(paste0(loc, "join_spec.csv"))
 
 trigger_matrix_diag <- form_trigger_matrix(input = join_diag,
                                       positive_trigger = "Pos_trigger_rate",
@@ -94,33 +98,33 @@ trigger_matrix_spec <- form_trigger_matrix(input = join_spec,
                                            negative_trigger = "Neg_trigger_rate")
 
 
-
+View(trigger_matrix_spec)
 
 # FUNCTIONS ---------------------------------------------------------------
 
 form_trigger_matrix <- function(input, positive_trigger, negative_trigger) {
   
   trig_matrix <- matrix(nrow=4, ncol = 4)
-  colnames(trig_matrix) <- c("neg_0.00", "neg_0.01", "neg_0.02", "neg_0.03")
-  rownames(trig_matrix) <- c("pos_0.00", "pos_0.01", "pos_0.02", "pos_0.03")
+  colnames(trig_matrix) <- c("neg_0.005", "neg_0.01", "neg_0.02", "neg_0.03")
+  rownames(trig_matrix) <- c("pos_0.005", "pos_0.01", "pos_0.02", "pos_0.03")
   
   
-  trig_matrix[1,1] <- nrow(input[input[positive_trigger] > 0.00 | input[negative_trigger] > 0.00,])
-  trig_matrix[1,2] <- nrow(input[input[positive_trigger] > 0.00 | input[negative_trigger] > 0.01,])
-  trig_matrix[1,3] <- nrow(input[input[positive_trigger] > 0.00 | input[negative_trigger] > 0.02,])
-  trig_matrix[1,4] <- nrow(input[input[positive_trigger] > 0.00 | input[negative_trigger] > 0.03,])
+  trig_matrix[1,1] <- nrow(input[input[positive_trigger] > 0.005 | input[negative_trigger] > 0.005,])
+  trig_matrix[1,2] <- nrow(input[input[positive_trigger] > 0.005 | input[negative_trigger] > 0.01,])
+  trig_matrix[1,3] <- nrow(input[input[positive_trigger] > 0.005 | input[negative_trigger] > 0.02,])
+  trig_matrix[1,4] <- nrow(input[input[positive_trigger] > 0.005 | input[negative_trigger] > 0.03,])
   
-  trig_matrix[2,1] <- nrow(input[input[positive_trigger] > 0.01 | input[negative_trigger] > 0.00,])
+  trig_matrix[2,1] <- nrow(input[input[positive_trigger] > 0.01 | input[negative_trigger] > 0.005,])
   trig_matrix[2,2] <- nrow(input[input[positive_trigger] > 0.01 | input[negative_trigger] > 0.01,])
   trig_matrix[2,3] <- nrow(input[input[positive_trigger] > 0.01 | input[negative_trigger] > 0.02,])
   trig_matrix[2,4] <- nrow(input[input[positive_trigger] > 0.01 | input[negative_trigger] > 0.03,])
   
-  trig_matrix[3,1] <- nrow(input[input[positive_trigger] > 0.02 | input[negative_trigger] > 0.00,])
+  trig_matrix[3,1] <- nrow(input[input[positive_trigger] > 0.02 | input[negative_trigger] > 0.005,])
   trig_matrix[3,2] <- nrow(input[input[positive_trigger] > 0.02 | input[negative_trigger] > 0.01,])
   trig_matrix[3,3] <- nrow(input[input[positive_trigger] > 0.02 | input[negative_trigger] > 0.02,])
   trig_matrix[3,4] <- nrow(input[input[positive_trigger] > 0.02 | input[negative_trigger] > 0.03,])
   
-  trig_matrix[4,1] <- nrow(input[input[positive_trigger] > 0.03 | input[negative_trigger] > 0.00,])
+  trig_matrix[4,1] <- nrow(input[input[positive_trigger] > 0.03 | input[negative_trigger] > 0.005,])
   trig_matrix[4,2] <- nrow(input[input[positive_trigger] > 0.03 | input[negative_trigger] > 0.01,])
   trig_matrix[4,3] <- nrow(input[input[positive_trigger] > 0.03 | input[negative_trigger] > 0.02,])
   trig_matrix[4,4] <- nrow(input[input[positive_trigger] > 0.03 | input[negative_trigger] > 0.03,])
