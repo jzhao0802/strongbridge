@@ -10,6 +10,7 @@ library(tidyverse)
 # DATA IN -----------------------------------------------------------------
 
 data_loc <- "F:/Projects/Strongbridge/data/feature_selection/"
+loc <- "F:/Projects/Strongbridge/data/feature_selection/"
 
 neg_diag <- read_csv(paste0(data_loc, "Diag4_Neg.csv"))
 pos_diag <- read_csv(paste0(data_loc, "Diag4_Pos.csv"))
@@ -40,7 +41,7 @@ pos_spec <-  pos_spec[complete.cases(pos_spec$Specialty),]
 # JOIN TABLES TOGETHER ----------------------------------------------------
 
 join_diag <- full_join(neg_diag, pos_diag, by = "DIAG4")
-colnames(join_diag)[3] <- "Positive_Count_of_Patients"
+colnames(join_diag)[c(2,3)] <- c("Negative_count", "Positive_count")
 
 join_gpi <- full_join(neg_gpi, pos_gpi, by = "GPI6")
 colnames(join_gpi)[c(3,5)] <- c("Negative_count", "Positive_count")
@@ -63,8 +64,8 @@ join_spec[is.na(join_spec)] <- 0
 negs <- 271150
 pos <- 5423
 
-join_diag$Neg_trigger_rate <- join_diag$Negative_Count_of_Patients/negs
-join_diag$Pos_trigger_rate <- join_diag$Positive_Count_of_Patients/pos
+join_diag$Neg_trigger_rate <- join_diag$Negative_count/negs
+join_diag$Pos_trigger_rate <- join_diag$Positive_count/pos
 
 join_gpi$Neg_trigger_rate <- join_gpi$Negative_count/negs
 join_gpi$Pos_trigger_rate <- join_gpi$Positive_count/pos 
@@ -75,6 +76,11 @@ join_proc$Pos_trigger_rate <- join_proc$Positive_count/pos
 join_spec$Neg_trigger_rate <- join_spec$Negative_count/negs
 join_spec$Pos_trigger_rate <- join_spec$Positive_count/pos 
 
+
+write_csv(join_diag, paste0(loc, "join_diag4.csv"))
+write_csv(join_proc, paste0(loc, "join_proc.csv"))
+write_csv(join_gpi, paste0(loc, "join_gpi.csv"))
+write_csv(join_spec, paste0(loc, "join_spec.csv"))
 
 join_diag <- read.csv(paste0(loc, "join_diag4.csv"))
 join_proc <- read.csv(paste0(loc, "join_proc.csv"))
@@ -97,8 +103,14 @@ trigger_matrix_spec <- form_trigger_matrix(input = join_spec,
                                            positive_trigger = "Pos_trigger_rate",
                                            negative_trigger = "Neg_trigger_rate")
 
+write.csv(trigger_matrix_diag, paste0(loc, "trigger_matrix_diag.csv"))
+write.csv(trigger_matrix_gpi, paste0(loc, "trigger_matrix_gpi.csv"))
+write.csv(trigger_matrix_proc, paste0(loc, "trigger_matrix_proc.csv"))
+write.csv(trigger_matrix_spec, paste0(loc, "trigger_matrix_spec.csv"))
 
 View(trigger_matrix_spec)
+
+write_csv(join_diag, "F:/Projects/Strongbridge/data/feature_selection/join_Diag4_zero_corrected.csv")
 
 # FUNCTIONS ---------------------------------------------------------------
 
