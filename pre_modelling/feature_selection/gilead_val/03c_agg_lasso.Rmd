@@ -1,7 +1,7 @@
 ---
-title: "Group LASSO"
+title: "Raw LASSO"
 author: "Orla"
-date: "June 20, 2017"
+date: "July 6, 2017"
 output: html_document
 ---
 #Libraries
@@ -30,6 +30,7 @@ Read the training and test data.
 df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
 df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
 
+
 ```
 Crude correction for missing values. 
 
@@ -37,6 +38,8 @@ Crude correction for missing values.
 df_tr[is.na(df_tr)] <- 0 
 df_ts[is.na(df_ts)] <- 0 
 ```
+
+
 Extract the appropriate variables using the var_config file. 
 
 ```{r}
@@ -58,23 +61,17 @@ hc <- read_rds(paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
 
 #Group LASSO model
 
-Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing 
+
+Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing. Implementations are provided for both the gglasso (https://cran.r-project.org/web/packages/gglasso/gglasso.pdf) and grpreg package (https://cran.r-project.org/web/packages/grpreg/grpreg.pdf). Initial tests suggested that the grpreg package is faster however the gglasso package is the more popular of the two. 
+
 ```{r}
 #tr_data <- data.matrix(dplyr::select(vdf_tr, -label))
 tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
-#grpl.fit <- grpreg(dplyr::select(vdf_tr, -label), vdf_tr$label, hc, penalty = "grLasso",family="binomial")
-tr_label <-vdf_tr$label
-tr_label[tr_label == 0]<- -1
-grpl.fit <- gglasso(as.matrix(dplyr::select(vdf_tr, -label)),tr_label,group=hc,loss="logit")
+grpl.fit <- grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial")
+#tr_label <-vdf_tr$label
+#tr_label[tr_label == 0]<- -1
+#grpl.fit <- gglasso(tr_data,tr_label,group=hc,loss="logit")
 
-
-Extract the coefficients of the model at a user specified value for lambda. 
-
-```{r}
-lambda_user <- 0.00001
-lasso.cvfit.coef <- as.data.frame(as.matrix(coef(grpl.fit, s = "lambda.min")))
-write_csv(lasso.cvfit.coef,paste0(path,"/01_data/cluster_dfs/gilead/vi_glasso_cluster.csv"))
-```																			
 
 ```
 
@@ -87,21 +84,21 @@ plot(grpl.fit)
 
 ```{r}
 #grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
-grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
-
+#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+#grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
 ```
 
 
 Use the trained model to provide predictions on the test set. This requires that lambda is either set to some default value or optimised using CV. 
 
 ```{r}
-#ts_data <- data.matrix(dplyr::select(vdf_ts, -label))
+#ts_data<- data.matrix(dplyr::select(vdf_ts, -label))
 #ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
 ts_data <-  as.matrix(dplyr::select(vdf_ts, -label))
-#grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = lambda_user)
+grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = 0.001 )
 
 #grpl.pred <- predict(grpl.fit,type="link",newx=ts_data, s=0.0001)
-#grpl.prob <- exp(grpl.pred)/(1+exp(grpl.pred))
+#grpl.prob <- exp(grpl.pred_ts)/(1+exp(grpl.pred_ts))
 ``` 
 
 #Performance
@@ -111,8 +108,8 @@ To assess the performance of the model a precision-recall curve is used.
 pr_grpl <- get_curve(grpl.pred, vdf_ts$label, "rec", "prec")
 pr_grpl_bin <- bin_curve(pr_grpl, 20, agg_func=mean)
 plot(pr_grpl_bin$x_binned, pr_grpl_bin$y)
-write.csv(pr_grpl_bin,paste0(path,"/01_data/cluster_dfs/gilead/pr_glasso_cluster.csv"))
-```																		 
+write.csv(pr_grpl_bin,paste0(path,"/01_data/cluster_dfs/stronbridge/pr_glasso_cluster.csv"))
+```
 
 
 

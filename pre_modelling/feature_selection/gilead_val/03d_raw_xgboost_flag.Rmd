@@ -1,0 +1,83 @@
+---
+title: "Raw LASSO"
+author: "Orla"
+date: "July 6, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(xgboost)
+```
+
+
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+```
+
+
+#Read data 
+Read the training and test data. 
+```{r}
+df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+
+
+```
+Crude correction for missing values. 
+
+```{r}
+df_tr[is.na(df_tr)] <- 0 
+df_ts[is.na(df_ts)] <- 0 
+```
+
+
+Extract the appropriate variables which in this case are the frequency variables. 
+
+```{r}
+df_tr %>% dplyr::select(label, contains("_flag")) -> vdf_tr
+df_ts %>% dplyr::select(label, contains("_flag")) -> vdf_ts
+
+```
+
+#Modelling
+Apply a gradient boosting trees model to the training dataset. 
+```{r}
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
+xgb.fit <- xgboost(data = tr_data, label = vdf_tr$label,
+max_depth = 6, eta = 0.3, nthread = 2, nrounds = 50,
+objective = "binary:logistic")
+
+```
+Apply the trained model to the test dataset and extract the variable importance. 
+```{r}
+ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
+xgb.pred <- predict(xgb.fit, ts_data)
+write_rds(xgb.pred ,paste0(path,"/01_data/cluster_dfs/gilead/fit_xgb_raw_flag.rds"))
+```
+
+Compute the importance table for the trained xgboost model. 
+```{r}
+importance_matrix <- xgb.importance(colnames(ts_data), model = xgb.fit)
+write.csv(importance_matrix ,paste0(path,"/01_data/cluster_dfs/gilead/xgb_vi_flag.csv"))
+```
+
+#Performance
+To assess the performance of the model a precision-recall curve is used. 
+
+```{r}
+pr_xgb <- get_curve(xgb.pred, vdf_ts$label, "rec", "prec")
+pr_xgb_bin <- bin_curve(pr_xgb, 20, agg_func=mean)
+plot(pr_xgb_bin$x_binned, pr_xgb_bin$y)
+write.csv(pr_xgb_bin ,paste0(path,"/01_data/cluster_dfs/gilead/pr_xgb_raw_flag.csv"))
+```
+
+
+

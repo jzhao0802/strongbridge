@@ -29,20 +29,14 @@ source("02_code/fs_funtions.R")
 
 Read the training data.  
 ```{r}
-df <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df <- read_csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
 
 ```
 
-Read the var_config file which will inform which varaibles should be used for clustering. 
+Read the var_config file which will inform which varaibles should be used for clustering. For Gilead, the data was saved using only the variables for modelling. From this set, select the frequency variables only. 
 
 ```{r}
-var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
-var_config <- readr::read_csv(var_config_file)
-var_config <- rbind(var_config, c("label", "outcome"))
-
-var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
-df[,var_inc_list$Column] -> vdf
-
+vdf <- df %>% dplyr::select(contains("ave_claims_count"))
 vvdf <-as.data.frame(t(vdf))
 
 ```
@@ -50,7 +44,7 @@ vvdf <-as.data.frame(t(vdf))
 
 #Clustering 
 ## Methods
-Hierarchical agglomerative clustering is proposed as the chosen method for clustering. In hierarchical clustering each variable initiates in its own cluster and pairs of clusters are merged during iterations. Spearman's rho is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. *Note: if all variables are continuous you might like to use Pearon's correlation coefficient. 
+Hierarchical agglomerative clustering is proposed as the chosen method for clustering. In hierarchical clustering each variable initiates in its own cluster and pairs of clusters are merged during iterations. Spearman's rho is chosen as the distance metric whereby correlation is transformed to a distance metric as 1 - abs(correlation_coefficient) as recommended in the following post: http://research.stowers.org/mcm/efg/R/Visualization/cor-cluster/index.htm. *Note: if all variables are continuous you might like to use Pearson's correlation coefficient. 
 
 The chosen linkage method was "average". Average-linkage calculates the distance between clusters as the average pairwise distance between members of the respective clusters.  
 
@@ -59,7 +53,7 @@ The chosen linkage method was "average". Average-linkage calculates the distance
 
 
 ```{r}
-cmat_raw<-cor(vdf,method="spearman")
+cmat_raw<-cor(vdf,method="pearson")
 cmat_raw[is.na(cmat_raw)]=0
 hist(cmat_raw)
 ```
@@ -78,15 +72,15 @@ The within sum of squares is the sum of squared difference from each data point 
 
 ```{r}
 
-wss_all <- NULL
-upper <- log2(ncol(vdf)-1)
-c_seq <-  2^seq(1, upper, 0.25)
-
-for(j in c_seq){
-  wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
-}
-
-plot(c_seq,wss_all)
+# wss_all <- NULL
+# upper <- log2(ncol(vdf)-1)
+# c_seq <-  round(2^seq(1, upper, 0.5))
+# 
+# for(j in c_seq){
+#   wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
+# }
+# 
+# plot(c_seq,wss_all)
 ```
 
 The silhouette width measures how similar a variable is to it's own cluster compared to other clusters. The silhouette width can range from -1 to 1, where values approaching 1 suggest a good fit and values approaching -1 suggest that the variable has not been assigned to the optimal cluster. It is calculated as 
@@ -108,7 +102,7 @@ plot(c_seq, silh_all)
 Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
-Nc <-400
+Nc <-90
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 ```
@@ -124,16 +118,19 @@ cvdf <- cbind(vvdf, hc_cut)
 
 cvdf %>% 
   group_by(hc_cut) %>% 
-  summarise_each(funs(mean)) -> ccvdf
-agg_vdf <- cbind(df$label, as.data.frame(t(ccvdf)))												   
+  summarise_each(funs(sum)) %>% 
+  dplyr::select(-hc_cut) -> ccvdf
+
+agg_vdf <- cbind(df$label, as.data.frame(t(ccvdf)))
 ```
 
 Following aggregation, the mean of the aggregated variables can be computed to provide some inight into the sparseness of the data in each cluster. The purpose is to flag clusters which contain variables with very low information content and to aid interpretation downstream. Additionally, the mean of each cluster is printed to a csv file along with the names of the variables contained in each cluster. 
 
 ```{r}
-mu_mu_cluster <- cvdf %>% 
+mu_mu_cluster <-cvdf %>% 
   group_by(hc_cut) %>% 
-  summarise_each(funs(mean)) %>%
+  summarise_each(funs(mean)) %>% 
+  dplyr::select(-hc_cut) %>% 
   rowMeans(.) %>% 
   round(.,3)
 
@@ -157,10 +154,10 @@ The results of the clustering are stored in two forms - the aggregated variables
 
 
 ```{r}
-#write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
-#write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
-#write_rds(agg_vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "x_clustering_tr_agg_sum.rds"))
-write_csv(clust_memb, paste0(path, "/01_data/cluster_dfs/strongbridge/", "clust_memb_table.csv"), na="")
+write_rds(hc, paste0(path, "/01_data/cluster_dfs/gilead/", "hc_obj.rds"))
+write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/gilead/", "hc_cut.rds"))
+write_rds(agg_vdf, paste0(path, "/01_data/cluster_dfs/gilead/", "x_clustering_tr_agg_sum.rds"))
+write_csv(clust_memb, paste0(path, "/01_data/cluster_dfs/gilead/", "clust_memb_table.csv"), na="")
 ```
 
 

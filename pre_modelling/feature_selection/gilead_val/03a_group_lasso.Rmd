@@ -27,8 +27,9 @@ source("02_code/fs_funtions.R")
 #Read data 
 Read the training and test data. 
 ```{r}
-df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
-df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+
 
 ```
 Crude correction for missing values. 
@@ -37,36 +38,37 @@ Crude correction for missing values.
 df_tr[is.na(df_tr)] <- 0 
 df_ts[is.na(df_ts)] <- 0 
 ```
-Extract the appropriate variables using the var_config file. 
+
+
+Extract the appropriate variables which in this case are the frequency variables. 
 
 ```{r}
-var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
-var_config <- readr::read_csv(var_config_file)
-var_config <- rbind(var_config, c("label", "outcome"))
+df_tr %>% dplyr::select(label, contains("ave_claims_count")) -> vdf_tr
+df_ts %>% dplyr::select(label, contains("ave_claims_count")) -> vdf_ts
 
-var_config %>% filter((Type == "numerical") | (Type == "categorical") | (Type == "outcome")) -> var_inc_list
-df_tr[,var_inc_list$Column] -> vdf_tr
-df_ts[,var_inc_list$Column] -> vdf_ts
 ```
 
 Read in the cluster memberships. These will serve as the groupings for group LASSO. 
 
 ```{r}
-hc <- read_rds(paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
+hc <- read_rds(paste0(path, "/01_data/cluster_dfs/gilead/", "hc_cut.rds"))
 ```
 
 
 #Group LASSO model
 
-Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing 
+
+Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing. Implementations are provided for both the gglasso (https://cran.r-project.org/web/packages/gglasso/gglasso.pdf) and grpreg package (https://cran.r-project.org/web/packages/grpreg/grpreg.pdf). Initial tests suggested that the grpreg package is faster however the gglasso package is the more popular of the two. 
+
 ```{r}
 #tr_data <- data.matrix(dplyr::select(vdf_tr, -label))
 tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
-#grpl.fit <- grpreg(dplyr::select(vdf_tr, -label), vdf_tr$label, hc, penalty = "grLasso",family="binomial")
-tr_label <-vdf_tr$label
-tr_label[tr_label == 0]<- -1
-grpl.fit <- gglasso(as.matrix(dplyr::select(vdf_tr, -label)),tr_label,group=hc,loss="logit")
-
+grpl.fit <- grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial")
+write_rds(grpl.fit,coef,paste0(path,"/01_data/cluster_dfs/gilead/fit_glasso_cluster.csv"))
+#tr_label <-vdf_tr$label
+#tr_label[tr_label == 0]<- -1
+#grpl.fit <- gglasso(tr_data,tr_label,group=hc,loss="logit")
+```
 
 Extract the coefficients of the model at a user specified value for lambda. 
 
@@ -74,8 +76,6 @@ Extract the coefficients of the model at a user specified value for lambda.
 lambda_user <- 0.00001
 lasso.cvfit.coef <- as.data.frame(as.matrix(coef(grpl.fit, s = "lambda.min")))
 write_csv(lasso.cvfit.coef,paste0(path,"/01_data/cluster_dfs/gilead/vi_glasso_cluster.csv"))
-```																			
-
 ```
 
 Once the model has been fitted, the weights of the coefficients can plotted against lambda. 
@@ -84,24 +84,23 @@ plot(grpl.fit)
 
 ```
 
-
 ```{r}
 #grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
-grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
-
+#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+#grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
 ```
 
 
 Use the trained model to provide predictions on the test set. This requires that lambda is either set to some default value or optimised using CV. 
 
 ```{r}
-#ts_data <- data.matrix(dplyr::select(vdf_ts, -label))
+#ts_data<- data.matrix(dplyr::select(vdf_ts, -label))
 #ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
 ts_data <-  as.matrix(dplyr::select(vdf_ts, -label))
-#grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = lambda_user)
+grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = lambda_user)
 
 #grpl.pred <- predict(grpl.fit,type="link",newx=ts_data, s=0.0001)
-#grpl.prob <- exp(grpl.pred)/(1+exp(grpl.pred))
+#grpl.prob <- exp(grpl.pred_ts)/(1+exp(grpl.pred_ts))
 ``` 
 
 #Performance
@@ -112,7 +111,7 @@ pr_grpl <- get_curve(grpl.pred, vdf_ts$label, "rec", "prec")
 pr_grpl_bin <- bin_curve(pr_grpl, 20, agg_func=mean)
 plot(pr_grpl_bin$x_binned, pr_grpl_bin$y)
 write.csv(pr_grpl_bin,paste0(path,"/01_data/cluster_dfs/gilead/pr_glasso_cluster.csv"))
-```																		 
+```
 
 
 

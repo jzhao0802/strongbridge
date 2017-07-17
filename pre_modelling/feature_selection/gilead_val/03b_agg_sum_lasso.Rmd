@@ -1,0 +1,77 @@
+---
+title: "LASSO applied to aggregated variables"
+author: "Orla"
+date: "July 5, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(glmnet)
+```
+
+
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+```
+
+#Read data 
+Read the training set which has already been aggregated.   
+```{r}
+adf_tr <- read_rds(paste0(path, "/01_data/cluster_dfs/gilead/", "x_clustering_tr_agg_sum.rds"))
+colnames(adf_tr)[1] <- "label"
+adf_tr[is.na(adf_tr)]=0
+```
+
+Read in the test data and cluster membership and use this to create aggregated variables for the test set. 
+
+```{r}
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+df_ts %>% dplyr::select(contains("ave_claims_count")) -> df_ts_nolabel
+hc <- read_rds(paste0(path, "/01_data/cluster_dfs/gilead/", "hc_cut.rds"))
+tdf_ts <- as.data.frame(t(df_ts_nolabel))
+ctdf_ts <- cbind(tdf_ts, hc)
+
+ctdf_ts %>% 
+  group_by(hc) %>% 
+  summarise_each(funs(sum)) %>% 
+  dplyr::select(-hc) -> actdf_ts
+
+adf_ts <- cbind(df_ts$label, as.data.frame(t(actdf_ts)))
+colnames(adf_ts)[1] <- "label"
+adf_tr[is.na(adf_tr)]=0
+```
+
+#Modelling
+Apply a logistic regression model with LASSO penalty to the aggreated variables in the training dataset. The glmnet package is used and the built function to estimate lambda using CV is called (cv.glmnet). Alternative code is provided to bypass the CV using the glmnet function directly. 
+```{r}
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(adf_tr, -label), as.numeric)))
+#lasso.fit <- glmnet(tr_data, y=as.factor(adf_tr$label), alpha=1, family="binomial")
+lasso.cvfit <- cv.glmnet(tr_data, y=as.factor(adf_tr$label), alpha=1, family="binomial")
+```
+Apply the trained model to the test dataset. When applying a LASSO model, the value for lambda is obtained using cross validation. Alternative code is provided so that the user can specify a value for lambda. 
+```{r}
+ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(adf_ts, -label), as.numeric)))
+#lasso.pred <- predict(lasso.fit, newx = ts_data, type = "response", s = 0.0000001)
+lasso.cvpred <- predict(lasso.cvfit, newx = ts_data, type = "response", s = "lambda.min")
+```
+
+
+#Performance
+To assess the performance of the model a precision-recall curve is used. In this case, the curves are computed for the model where lambda has been estimated using CV. 
+
+```{r}
+pr_lasso <- get_curve(lasso.cvpred, adf_ts$label, "rec", "prec")
+pr_lasso_bin <- bin_curve(pr_lasso, 20, agg_func=mean)
+plot(pr_lasso_bin$x_binned, pr_lasso_bin$y)
+write.csv(pr_lasso_bin,paste0(path,"/01_data/cluster_dfs/gilead/pr_lasso_cluster_sum.csv"))
+```
+
+

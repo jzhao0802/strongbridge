@@ -1,0 +1,56 @@
+---
+title: "Preprocess data for clustering"
+author: "Orla"
+date: "June 16, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(caTools)
+```
+
+
+#Paths and files.
+
+Set up the paths and filenames of the positive and negative cohorts. **Note the negative cohort is not yet available.** Here we assume that positive cohort which are read in have not been selected using the finalised set of inclusion and exclusion criteria.
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+pos_data_file <- stringr::str_c(path, "/01_data/Positive_Cohort_v1_20170425.csv")
+#neg_data_file <- stringr::str_c(path, "/01_data/<neg cohort file name..csv")
+
+var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+```
+
+#Read data
+Downsample the data so that it's the same size as the Strongbridge data set. 
+
+```{r}
+df <- read_rds(paste0("F:/Projects/Gilead/data/modelling/", "train_all_no_cm_date_diff_vars.rds"))
+isb <- sample.split(df$label, SplitRatio = 0.211)
+df_sb_size <- df[isb,] 
+```
+
+#Training and test splits
+Partition the data sets into training and test splits. 
+
+```{r}
+itr <- sample.split(df_sb_size$label, SplitRatio = 0.75)
+x_clustering_tr <- df_sb_size[itr,]
+x_clustering_ts <- df_sb_size[!itr,]
+```
+#Write out the clustering data sets. 
+```{r}
+write.csv(x_clustering_tr, paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
+write.csv(x_clustering_ts, paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"))
+
+```
+
+

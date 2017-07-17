@@ -1,0 +1,117 @@
+---
+title: "Group LASSO"
+author: "Orla"
+date: "June 20, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(grpreg)
+library(gglasso)
+```
+
+
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+```
+
+
+#Read data 
+Read the training and test data. 
+```{r}
+df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+
+
+```
+Crude correction for missing values. 
+
+```{r}
+df_tr[is.na(df_tr)] <- 0 
+df_ts[is.na(df_ts)] <- 0 
+```
+
+
+Extract the appropriate variables which in this case are the frequency variables. 
+
+```{r}
+df_tr %>% dplyr::select(label, contains("_flag")) -> vdf_tr
+df_ts %>% dplyr::select(label, contains("_flag")) -> vdf_ts
+
+```
+
+Read in the cluster memberships. These will serve as the groupings for group LASSO. 
+
+```{r}
+hc <- read_rds(paste0(path, "/01_data/cluster_dfs/gilead/", "flag_hc_cut.rds"))
+```
+
+
+#Group LASSO model
+
+
+Train the group LASSO model providing the cluster memberships as the groups. The data frame is converted to a numeric matrix before processing. Implementations are provided for both the gglasso (https://cran.r-project.org/web/packages/gglasso/gglasso.pdf) and grpreg package (https://cran.r-project.org/web/packages/grpreg/grpreg.pdf). Initial tests suggested that the grpreg package is faster however the gglasso package is the more popular of the two. 
+
+```{r}
+#tr_data <- data.matrix(dplyr::select(vdf_tr, -label))
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
+grpl.fit <- grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial")
+write_rds(grpl.fit,paste0(path,"/01_data/cluster_dfs/gilead/fit_glasso_cluster_flag.rds"))
+#tr_label <-vdf_tr$label
+#tr_label[tr_label == 0]<- -1
+#grpl.fit <- gglasso(tr_data,tr_label,group=hc,loss="logit")
+```
+
+Extract the coefficients of the model at a user specified value for lambda. 
+
+```{r}
+lambda_user <- 0.001
+grpl.fit.coef <- as.data.frame(as.matrix(coef(grpl.fit, lambda = lambda_user)))
+write.csv(grpl.fit.coef,paste0(path,"/01_data/cluster_dfs/gilead/vi_glasso_cluster_flag.csv"))
+```
+
+Once the model has been fitted, the weights of the coefficients can plotted against lambda. 
+```{r}
+plot(grpl.fit)
+
+```
+
+```{r}
+#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+#grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
+```
+
+
+Use the trained model to provide predictions on the test set. This requires that lambda is either set to some default value or optimised using CV. 
+
+```{r}
+#ts_data<- data.matrix(dplyr::select(vdf_ts, -label))
+#ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
+ts_data <-  as.matrix(dplyr::select(vdf_ts, -label))
+grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = lambda_user)
+
+#grpl.pred <- predict(grpl.fit,type="link",newx=ts_data, s=0.0001)
+#grpl.prob <- exp(grpl.pred_ts)/(1+exp(grpl.pred_ts))
+``` 
+
+#Performance
+To assess the performance of the model a precision-recall curve is used. 
+
+```{r}
+pr_grpl <- get_curve(grpl.pred, vdf_ts$label, "rec", "prec")
+pr_grpl_bin <- bin_curve(pr_grpl, 20, agg_func=mean)
+plot(pr_grpl_bin$x_binned, pr_grpl_bin$y)
+write.csv(pr_grpl_bin,paste0(path,"/01_data/cluster_dfs/gilead/pr_glasso_cluster_flag.csv"))
+```
+
+
+

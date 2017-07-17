@@ -1,0 +1,85 @@
+---
+title: "Raw LASSO"
+author: "Orla"
+date: "July 6, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(glmnet)
+```
+
+
+
+```{r}
+path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
+setwd(path)
+source("02_code/fs_funtions.R")
+
+```
+
+
+#Read data 
+Read the training and test data. 
+```{r}
+df_tr <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df_ts <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"), stringsAsFactors = FALSE)
+```
+Crude correction for missing values. 
+
+```{r}
+df_tr[is.na(df_tr)] <- 0 
+df_ts[is.na(df_ts)] <- 0 
+```
+
+
+Extract the appropriate variables which in this case are the frequency variables. 
+
+```{r}
+df_tr %>% dplyr::select(label, contains("_flag")) -> vdf_tr
+df_ts %>% dplyr::select(label, contains("_flag")) -> vdf_ts
+
+```
+
+#Modelling
+Apply a logistic regression model with LASSO penalty to the aggreated variables in the training dataset. The glmnet package is used and the built function to estimate lambda using CV is called (cv.glmnet). Alternative code is provided to bypass the CV using the glmnet function directly. 
+
+```{r}
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
+#lasso.fit <- glmnet(tr_data, y=as.factor(adf_tr$label), alpha=1, family="binomial")
+lasso.cvfit <- cv.glmnet(tr_data, y=as.factor(vdf_tr$label), alpha=1, family="binomial")
+write_rds(lasso.cvfit ,paste0(path,"/01_data/cluster_dfs/gilead/cvfit_lasso_raw_flag.rds"))
+```
+
+Extract the coefficients of the model. 
+
+```{r}
+lasso.cvfit.coef <- as.data.frame(as.matrix(coef(lasso.cvfit, s = "lambda.min")))
+write.csv(lasso.cvfit.coef,paste0(path,"/01_data/cluster_dfs/gilead/vi_lasso_raw_flag.csv"))
+```
+
+Apply the trained model to the test dataset. When applying a LASSO model, the value for lambda is obtained using cross validation. Alternative code is provided so that the user can specify a value for lambda. 
+
+```{r}
+ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
+#lasso.pred <- predict(lasso.fit, newx = ts_data, type = "response", s = 0.0000001)
+lasso.cvpred <- predict(lasso.cvfit, newx = ts_data, type = "response", s = "lambda.min")
+```
+
+
+#Performance
+To assess the performance of the model a precision-recall curve is used. In this case, the curves are computed for the model where lambda has been estimated using CV. 
+
+```{r}
+pr_lasso <- get_curve(lasso.cvpred, vdf_ts$label, "rec", "prec")
+pr_lasso_bin <- bin_curve(pr_lasso, 20, agg_func=mean)
+plot(pr_lasso_bin$x_binned, pr_lasso_bin$y)
+write.csv(pr_lasso_bin ,paste0(path,"/01_data/cluster_dfs/gilead/pr_lasso_raw_flag.csv"))
+```
+
+
+
