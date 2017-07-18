@@ -23,10 +23,6 @@ path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
 setwd(path)
 source("02_code/fs_funtions.R")
 
-pos_data_file <- stringr::str_c(path, "/01_data/Positive_Cohort_v1_20170425.csv")
-#neg_data_file <- stringr::str_c(path, "/01_data/<neg cohort file name..csv")
-
-var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
 ```
 
 #Read data
@@ -48,8 +44,8 @@ x_clustering_ts <- df_sb_size[!itr,]
 ```
 #Write out the clustering data sets. 
 ```{r}
-write.csv(x_clustering_tr, paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
-write.csv(x_clustering_ts, paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"))
+write_csv(x_clustering_tr, paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
+write_csv(x_clustering_ts, paste0(path, "/01_data/cluster_dfs/gilead/", "df_ts_clust.csv"))
 
 ```
 

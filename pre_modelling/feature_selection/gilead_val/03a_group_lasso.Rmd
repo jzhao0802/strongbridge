@@ -64,13 +64,14 @@ Train the group LASSO model providing the cluster memberships as the groups. The
 #tr_data <- data.matrix(dplyr::select(vdf_tr, -label))
 tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.numeric)))
 grpl.fit <- grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial")
-write_rds(grpl.fit,coef,paste0(path,"/01_data/cluster_dfs/gilead/fit_glasso_cluster.csv"))
+write_rds(grpl.fit,paste0(path,"/01_data/cluster_dfs/gilead/fit_glasso_cluster.rds"))
 #tr_label <-vdf_tr$label
 #tr_label[tr_label == 0]<- -1
 #grpl.fit <- gglasso(tr_data,tr_label,group=hc,loss="logit")
 ```
 
-Extract the coefficients of the model at a user specified value for lambda. 
+Extract the coefficients of the model at the cross-validated fit for lambda or alternatively at a user specified value for lambda. 
+Note that the CV does not take into account the imbalance in the data so may not be the optimal choice. 
 
 ```{r}
 lambda_user <- 0.00001
@@ -97,7 +98,7 @@ Use the trained model to provide predictions on the test set. This requires that
 #ts_data<- data.matrix(dplyr::select(vdf_ts, -label))
 #ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
 ts_data <-  as.matrix(dplyr::select(vdf_ts, -label))
-grpl.pred <- predict(grpl.fit,ts_data, type="response", lambda = lambda_user)
+grpl.pred <- predict(grpl.fit,ts_data, type="response", s = lambda_user)
 
 #grpl.pred <- predict(grpl.fit,type="link",newx=ts_data, s=0.0001)
 #grpl.prob <- exp(grpl.pred_ts)/(1+exp(grpl.pred_ts))

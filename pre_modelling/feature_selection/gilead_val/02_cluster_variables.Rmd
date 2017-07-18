@@ -27,18 +27,17 @@ setwd(path)
 source("02_code/fs_funtions.R")
 ```
 
-Read the training data.  
+Read the training data that has been preprocessed using ./01_preprocess.Rmd. Note that the readr package is faster but sometimes leads to errors so I've used Base R instead.  
 ```{r}
-df <- read_csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
-
+df <- read.csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+#df <- read_csv(paste0(path, "/01_data/cluster_dfs/gilead/", "df_tr_clust.csv"))
 ```
 
 Read the var_config file which will inform which varaibles should be used for clustering. For Gilead, the data was saved using only the variables for modelling. From this set, select the frequency variables only. 
 
 ```{r}
-vdf <- df %>% select(contains("ave_claims_count"))
+vdf <- df %>% dplyr::select(contains("ave_claims_count"))
 vvdf <-as.data.frame(t(vdf))
-
 ```
 
 
@@ -51,13 +50,10 @@ The chosen linkage method was "average". Average-linkage calculates the distance
 *Note that there are several options for linkage and this could be varied*. The following post describes each linkage method: (https://stats.stackexchange.com/questions/195446/choosing-the-right-linkage-method-for-hierarchical-clustering). 
 
 
-
 ```{r}
 cmat_raw<-cor(vdf,method="pearson")
 cmat_raw[is.na(cmat_raw)]=0
 hist(cmat_raw)
-```
-```{r}
 dissimilarity <- 1 - abs(cmat_raw)
 distance <- as.dist(dissimilarity)
 hc <- hclust(distance, method = "average")
@@ -69,18 +65,18 @@ Setting the number of clusters is anticipated to be the key challenge. There are
 Here two different metrics are presented - the within sum of squares and the silhouette width. 
 
 The within sum of squares is the sum of squared difference from each data point to the centroid of the cluster. The objective is to minimise this distance and therefore the elbow of this curve can be chosen to the select the number of clusters. 
+Note - this block can be slow to run. 
 
 ```{r}
+wss_all <- NULL
+upper <- log2(ncol(vdf)-1)
+c_seq <-  round(2^seq(1, upper, 1))
 
-# wss_all <- NULL
-# upper <- log2(ncol(vdf)-1)
-# c_seq <-  round(2^seq(1, upper, 0.5))
-# 
-# for(j in c_seq){
-#   wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
-# }
-# 
-# plot(c_seq,wss_all)
+for(j in c_seq){
+  wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
+}
+
+plot(c_seq,wss_all)
 ```
 
 The silhouette width measures how similar a variable is to it's own cluster compared to other clusters. The silhouette width can range from -1 to 1, where values approaching 1 suggest a good fit and values approaching -1 suggest that the variable has not been assigned to the optimal cluster. It is calculated as 
@@ -90,7 +86,7 @@ where a(i) is the average distance between i and all all variables in the same c
 ```{r}
 #silhouette
 upper <- log2(ncol(vdf)-1)
-c_seq <-  round(2^seq(1, upper, 0.2))
+c_seq <-  round(2^seq(1, upper, 0.1))
 silh_all <- NULL
 for(j in c_seq){
   ss <- silhouette(cutree(hc, k=j),distance)
@@ -99,10 +95,10 @@ for(j in c_seq){
 plot(c_seq, silh_all)
 ```
 
-Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
+The number of clusters has been selected as 70. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
-Nc <-90
+Nc <-70
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 ```
@@ -119,7 +115,7 @@ cvdf <- cbind(vvdf, hc_cut)
 cvdf %>% 
   group_by(hc_cut) %>% 
   summarise_each(funs(mean)) %>% 
-  select(-hc_cut) -> ccvdf
+  dplyr::select(-hc_cut) -> ccvdf
 
 agg_vdf <- cbind(df$label, as.data.frame(t(ccvdf)))
 ```
@@ -157,4 +153,4 @@ write_rds(agg_vdf, paste0(path, "/01_data/cluster_dfs/gilead/", "x_clustering_tr
 write_csv(clust_memb, paste0(path, "/01_data/cluster_dfs/gilead/", "clust_memb_table.csv"), na="")
 ```
 
-
+ 
