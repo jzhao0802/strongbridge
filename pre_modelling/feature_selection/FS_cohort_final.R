@@ -52,7 +52,26 @@ x_pos_strat <- merge(x_pos, pos_orig, by = "PATIENT_ID", all.x=TRUE) %>%
 x_pos_narrow <- x_pos_strat %>%
   filter( 
     (SELECTION_1B == 1 | SELECTION_2B == 1) 
-  ) %>% 
-  merge(pos_orig, by="PATIENT_ID")
+  )
 
 # 1553 patients
+
+# -------------------------------------------------------------
+# Create Wide prime cohort for FS - C07
+# -------------------------------------------------------------
+x_pos_wide <- x_pos_strat %>%   
+  filter((CLEAN_PPP_DX_FLAG == "Y") |
+           ((DIRTY_PPP_DX_FLAG == "Y") & (TREATED_FLAG == "Y")))
+
+x_pos_wide_p <-  anti_join(x_pos_wide, x_pos_narrow, by = "PATIENT_ID")
+
+# 2405 patients
+
+# -------------------------------------------------------------
+# Write out ideas
+# -------------------------------------------------------------
+outdir <- "F:/Projects/Strongbridge/data/feature_selection/"
+write.csv(x_pos_narrow %>% select(PATIENT_ID), row.names = F,
+          paste0(outdir, "patient_ids_c06_strat_model_pos.csv"))
+write.csv(x_pos_wide_p %>% select(PATIENT_ID), row.names = F,
+          paste0(outdir, "patient_ids_c07_strat_fs_pos.csv"))
