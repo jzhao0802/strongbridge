@@ -12,21 +12,21 @@ library(plyr)
 
 data_loc <- "F:/Projects/Strongbridge/data/fs_modelling_cohorts/Strongbridge_"
 
-Neg_DX <- read_csv(paste0(data_loc, "Neg_DX.csv"),
+Neg_DX <- read_csv(paste0(data_loc, "Neg_DX_Update20170724.csv"),
                    col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Neg_PA <- read_csv(paste0(data_loc, "Neg_PA.csv"),
                    col_types = (cols(patient_id = col_character(), .default = col_guess())))
-Neg_PR <-  read_csv(paste0(data_loc, "Neg_PR.csv"),
+Neg_PR <-  read_csv(paste0(data_loc, "Neg_PR_Update20170724.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Neg_RX <-  read_csv(paste0(data_loc, "Neg_RX.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Neg_SP <-  read_csv(paste0(data_loc, "Neg_SP.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_DX <-  read_csv(paste0(data_loc, "Pos_DX.csv"),
+Pos_DX <-  read_csv(paste0(data_loc, "Pos_DX_Update20170724.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Pos_PA <-  read_csv(paste0(data_loc, "Pos_PA.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_PR <-  read_csv(paste0(data_loc, "Pos_PR.csv"),
+Pos_PR <-  read_csv(paste0(data_loc, "Pos_PR_Update20170724.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Pos_RX <-  read_csv(paste0(data_loc, "Pos_RX.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
@@ -34,9 +34,15 @@ Pos_SP <-  read_csv(paste0(data_loc, "Pos_SP.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 
 
+# CREATE DATE DIFF VARIABLES ----------------------------------------------
+
 # Left join cohorts together:
 Pos_all <- join_all(list(Pos_PA, Pos_DX, Pos_RX, Pos_PR, Pos_SP), type = "left")
 Neg_all <- join_all(list(Neg_PA, Neg_DX, Neg_RX, Neg_PR, Neg_SP), type = "left")
+
+# set relic PATIENT_ID to NULL and turn 'patient_id' to 'PATIENT_ID'
+Neg_all$PATIENT_ID <- NULL
+colnames(Neg_all)[grep("patient_id", colnames(Neg_all))] <- "PATIENT_ID"
 
 # Convert all dates to correct format:
 Pos_dates <- data.frame(PATIENT_ID = Pos_all$PATIENT_ID,
@@ -56,14 +62,8 @@ summary(Pos_date_format$index_date)
 # These are actually the date difference variables:
 Date_diffs_pos_df <- as.data.frame(sapply(Pos_date_format[,-1], function(x) { 
   Pos_date_format$index_date - x
-  }))
-max(Date_diffs_pos_df, na.rm = TRUE)
-
-# compare the lookback date to the first and last exposure dates:
-pos_lookback_diff <- as.data.frame(sapply(Pos_date_format[,-1], function(x) {
-  x - Pos_date_format$looback_days
 }))
-max(pos_lookback_diff, na.rm = TRUE)
+
 # FUNCTIONS ---------------------------------------------------------------
 
 # convert date format:
