@@ -69,7 +69,7 @@ table(str_sub(colnames(Pos_PR), -5, -1))
 # flags, exposure dates, average claims, claim count.
 table(str_sub(colnames(Neg_SP), -5, -1))
 table(str_sub(colnames(Pos_SP), -5, -1))
-# common vars, lookback date/length and index date
+
 table(str_sub(colnames(Neg_PA), -5, -1))
 table(str_sub(colnames(Pos_PA), -5, -1))
 
@@ -86,24 +86,6 @@ Miss_Neg_PR <- prop_missing(Neg_PR)
 Miss_Neg_PA <- prop_missing(Neg_PA)
 Miss_Neg_SP <- prop_missing(Neg_SP)
 
-
-# ALL DATE VARS IN SAME FORMAT --------------------------------------------
-
-Pos_DX_dates <- data.frame(PATIENT_ID = Pos_DX$PATIENT_ID, select(Pos_DX, ends_with("EXP_DT")))
-Pos_PR_dates <- data.frame(PATIENT_ID = Pos_PR$PATIENT_ID, select(Pos_PR, ends_with("EXP_DT")))
-Pos_RX_dates <- data.frame(PATIENT_ID = Pos_RX$PATIENT_ID, select(Pos_RX, ends_with("EXP_DT")))
-
-Neg_DX_dates <- data.frame(PATIENT_ID = Neg_DX$PATIENT_ID, select(Neg_DX, ends_with("EXP_DT")))
-Neg_PR_dates <- data.frame(PATIENT_ID = Neg_PR$PATIENT_ID, select(Neg_PR, ends_with("EXP_DT")))
-Neg_RX_dates <- data.frame(PATIENT_ID = Neg_RX$PATIENT_ID, select(Neg_RX, ends_with("EXP_DT")))
-
-# Convert all dates to correct format:
-Pos_DX_date_form <- date_format(input_data = Pos_DX_dates, date_pattern = "EXP_DT")
-Pos_PR_date_form <- date_format(input_data = Pos_PR_dates, date_pattern = "EXP_DT")
-Pos_RX_date_form <- date_format(input_data = Pos_RX_dates, date_pattern = "EXP_DT")
-Neg_DX_date_form <- date_format(input_data = Neg_DX_dates, date_pattern = "EXP_DT")
-Neg_PR_date_form <- date_format(input_data = Neg_PR_dates, date_pattern = "EXP_DT")
-Neg_RX_date_form <- date_format(input_data = Neg_RX_dates, date_pattern = "EXP_DT")
 
 # Plot lookback length:
 Neg_lookback <- data.frame(lookback_days = Neg_PA$LOOKBACK_DAYS,
@@ -124,7 +106,8 @@ Neg_all <- join_all(list(Neg_PA, Neg_DX, Neg_RX, Neg_PR, Neg_SP), type = "left")
 
 # CHECK DATE VARIABLES ----------------------------------------------------
 
-# POSITIVES:
+
+# POSITIVES ---------------------------------------------------------------
 # Convert all dates to correct format:
 Pos_dates <- data.frame(PATIENT_ID = Pos_all$PATIENT_ID,
                         select(Pos_all, ends_with("EXP_DT")))
@@ -152,32 +135,33 @@ pos_lookback_diff <- as.data.frame(sapply(Pos_date_format[,-1], function(x) {
 }))
 min(pos_lookback_diff, na.rm = TRUE)
 
-# NEGATIVES
-Neg_dates <- data.frame(PATIENT_ID = Neg_all$patient_id,
+
+# NEGATIVES ---------------------------------------------------------------
+Neg_dates <- data.frame(PATIENT_ID = Neg_all$PATIENT_ID,
                         select(Neg_all, ends_with("EXP_DT")))
 Neg_dates$PATIENT_ID <- as.character(Neg_dates$PATIENT_ID)
 Neg_date_format <- date_format(input_data = Neg_dates, date_pattern = "EXP_DT",
                                PATIENT_ID_col = "PATIENT_ID")
-all.equal(class(Neg_all$patient_id), class(Neg_all$PATIENT_ID))
-Pos_date_format$looback_days <- mdy(Pos_all$final_lookback)
-Pos_date_format$index_date <- mdy(Pos_all$final_index)
+
+Neg_date_format$looback_days <- mdy(Neg_all$lookback_date)
+Neg_date_format$index_date <- mdy(Neg_all$index_date)
 
 # summary of lookback and index:
-summary(Pos_date_format$looback_days)
-summary(Pos_date_format$index_date)
+summary(Neg_date_format$looback_days)
+summary(Neg_date_format$index_date)
 
 # check that none of these dates occur before the lookback date:
 # These are actually the date difference variables:
-Date_diffs_pos_df <- as.data.frame(sapply(Pos_date_format[,-1], function(x) { 
-  Pos_date_format$index_date - x
+Date_diffs_neg_df <- as.data.frame(sapply(Neg_date_format[,-1], function(x) { 
+  Neg_date_format$index_date - x
   }))
-min(Date_diffs_pos_df, na.rm = TRUE)
+min(Date_diffs_neg_df, na.rm = TRUE)
 
 # compare the lookback date to the first and last exposure dates:
-pos_lookback_diff <- as.data.frame(sapply(Pos_date_format[,-1], function(x) {
-  x - Pos_date_format$looback_days
+neg_lookback_diff <- as.data.frame(sapply(Neg_date_format[,-1], function(x) {
+  x - Neg_date_format$looback_days
 }))
-min(pos_lookback_diff, na.rm = TRUE)
+min(neg_lookback_diff, na.rm = TRUE)
 
 
 
