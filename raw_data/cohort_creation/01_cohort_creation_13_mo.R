@@ -9,27 +9,27 @@ library(lubridate)
 library(plyr)
 # LOAD DATA ---------------------------------------------------------------
 
-data_loc <- "F:/Projects/Strongbridge/data/Cohorts/02_Raw_data_pull_12_months/"
+data_loc <- "F:/Projects/Strongbridge/data/Cohorts/04_Raw_data_pull_13_months_plus/"
 
-Neg_DX <- read_csv(paste0(data_loc, "Strongbridge_Neg_DX_12.csv"),
+Neg_DX <- read_csv(paste0(data_loc, "Strongbridge_Neg_DX_13.csv"),
                    col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Neg_PA <- read_csv(paste0(data_loc, "Strongbridge_Neg_PA.csv"),
                    col_types = (cols(patient_id = col_character(), .default = col_guess())))
-Neg_PR <-  read_csv(paste0(data_loc, "Strongbridge_Neg_PR_12.csv"),
+Neg_PR <-  read_csv(paste0(data_loc, "Strongbridge_Neg_PR_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Neg_RX <-  read_csv(paste0(data_loc, "Strongbridge_Neg_RX_12.csv"),
+Neg_RX <-  read_csv(paste0(data_loc, "Strongbridge_Neg_RX_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Neg_SP <-  read_csv(paste0(data_loc, "Strongbridge_Neg_SP_12.csv"),
+Neg_SP <-  read_csv(paste0(data_loc, "Strongbridge_Neg_SP_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_DX <-  read_csv(paste0(data_loc, "Strongbridge_Pos_DX_12.csv"),
+Pos_DX <-  read_csv(paste0(data_loc, "Strongbridge_Pos_DX_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 Pos_PA <-  read_csv(paste0(data_loc, "Strongbridge_Pos_PA.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_PR <-  read_csv(paste0(data_loc, "Strongbridge_Pos_PR_12.csv"),
+Pos_PR <-  read_csv(paste0(data_loc, "Strongbridge_Pos_PR_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_RX <-  read_csv(paste0(data_loc, "Strongbridge_Pos_RX_12.csv"),
+Pos_RX <-  read_csv(paste0(data_loc, "Strongbridge_Pos_RX_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
-Pos_SP <-  read_csv(paste0(data_loc, "Strongbridge_Pos_SP_12.csv"),
+Pos_SP <-  read_csv(paste0(data_loc, "Strongbridge_Pos_SP_13.csv"),
                     col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 
 # COMMON VARIABLE NAMES ---------------------------------------------------
@@ -48,14 +48,17 @@ Neg_DX <- Neg_DX[,-which(colnames(Neg_DX) %in% exclude)]
 Pos_all <- join_all(list(Pos_PA, Pos_DX, Pos_RX, Pos_PR, Pos_SP), type = "left")
 Neg_all <- join_all(list(Neg_PA, Neg_DX, Neg_RX, Neg_PR, Neg_SP), type = "left")
 
-# # remove rows with all NA apart from common vars:
-# Pos_all <- Pos_all[apply(Pos_all[,7:ncol(Pos_all)], 1, function(y) !all(is.na(y))),]
+# print(nrow(Neg_all))
 # # this removes 0 from the positive cohort, and 128 from the negative
 # Neg_all <- Neg_all[apply(Neg_all[,8:ncol(Pos_all)], 1, function(y) !all(is.na(y))),]
+# print(nrow(Neg_all))
 
 # add label col
 Pos_all$label <- 1
 Neg_all$label <- 0
+
+# remove these files from memory:
+rm(Neg_DX, Neg_RX, Neg_SP, Neg_PR, Pos_DX, Pos_RX, Pos_PR, Pos_PA, Pos_PR)
 
 # # VARIABLE ENCODING -------------------------------------------------------
 # 
@@ -107,41 +110,38 @@ Neg_dates_MOD <- Neg_dates[Neg_MOD_index, ]
 
 # write out to rds:
 
-mod_dir <- "F:/Projects/Strongbridge/data/Cohorts/03_Cohorts_by_variable_type_12_months/"
+output_dir <- "F:/Projects/Strongbridge/data/Cohorts/05_Cohorts_by_variable_type_13_months/"
 # NEGATIVES
 write_rds( Neg_flags_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Neg_flags_MOD",
                   ".rds"))
 write_rds( Neg_common_frequencies_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Neg_common_frequencies_MOD",
                   ".rds"))
 write_rds( Neg_claims_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Neg_claims_MOD",
                   ".rds"))
 write_rds( Neg_dates_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Neg_dates_MOD",
                   ".rds"))
 # POSITIVES
 write_rds( Pos_flags_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Pos_flags_MOD",
                   ".rds"))
 write_rds( Pos_common_frequencies_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Pos_common_frequencies_MOD",
                   ".rds"))
 write_rds( Pos_claims_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Pos_claims_MOD",
                   ".rds"))
 write_rds( Pos_dates_MOD,
-           paste0(mod_dir,
+           paste0(output_dir,
                   "Pos_dates_MOD",
                   ".rds"))
-
-
-
