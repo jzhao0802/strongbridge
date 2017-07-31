@@ -18,7 +18,6 @@ Neg_freq <- read_rds(paste0("F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by
                             "Neg_common_frequencies_FS",
                             ".rds"))
 
-
 # PREMODELLING ------------------------------------------------------------
 # MANIPULATION 
 Neg_freq$test_patient_id <- NULL
@@ -45,12 +44,20 @@ modelling_data$lookback_date <- NULL
 modelling_data$D_3592_AVG_CLAIM_CNT <- NULL
 modelling_data$lookback_days <- NULL
 modelling_data$label <- as.factor(modelling_data$label)
+
+# Other variable manipulation (e.g. subsetting by variable importance)
+
+# SELECTING ONLY THE TOP 300 VARIABLES BY XGBOOST IMPORTANCE :
+features_index <- c(which(colnames(modelling_data) == "label"), 
+              which(colnames(modelling_data) %in% importance$Feature[1:1000]))
+modelling_data_subset <- modelling_data
+colnames(modelling_data_subset)
 # MODELLING ---------------------------------------------------------------
 
-table(combined_data$label)
+table(modelling_data_subset$label)
 # Make modelling dataset
 model_data <- makeClassifTask(id = "Feature_selection", 
-                              data = modelling_data, 
+                              data = modelling_data_subset, 
                               target = "label",
                               positive = 1)
 
@@ -74,12 +81,14 @@ pr_resam <- palabmod::perf_binned_perf_curve(resam$pred,
                                              y_metric = "prec",
                                              agg_func = mean)
 
-write_csv(pr_resam$curve, "F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_freq.csv")
+write_csv(pr_resam$curve, "F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_freq_top__predictors.csv")
 
 xgb_model <- train(learner = lrn_xgb, task = model_data)
-  
-importance <- xgb.importance(model = xgb_model$learner.model, feature_names = xgb_model$features)
 
+detailed_importance <- xgb.importance(model = xgb_model$learner.model, feature_names = colnames(model_data$env$data),
+                             data = as.matrix(model_data$env$data), label = model_data$env$data$label)
+
+write_csv(importance, "F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_importance.csv")
 
 
 
