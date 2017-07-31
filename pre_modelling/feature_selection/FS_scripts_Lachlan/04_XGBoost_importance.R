@@ -20,29 +20,23 @@ Neg_freq <- read_rds(paste0("F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by
 
 # PREMODELLING ------------------------------------------------------------
 # MANIPULATION 
-Pos_freq$test_patient_id <- NA
+Neg_freq$test_patient_id <- NULL
 # Order variables so the datasets can be bound
 setdiff(colnames(Pos_freq), colnames(Neg_freq))
-setdiff(colnames(Neg_freq), colnames(Pos_freq))
 Pos_order <- Pos_freq[order(match(colnames(Pos_freq), colnames(Neg_freq)))]
 all.equal(colnames(Pos_order), colnames(Neg_freq))
 
 # convert all freq variables to numeric:
-Neg_freq[,9:ncol(Neg_freq)] <- sapply(Neg_freq[,9:ncol(Neg_freq)], as.numeric)
-Pos_order[,9:ncol(Pos_order)] <- sapply(Pos_order[,9:ncol(Pos_order)], as.numeric)
+Neg_freq[,8:ncol(Neg_freq)] <- sapply(Neg_freq[,8:ncol(Neg_freq)], as.numeric)
+Pos_order[,8:ncol(Pos_order)] <- sapply(Pos_order[,8:ncol(Pos_order)], as.numeric)
 combined_data <- bind_rows(Neg_freq, Pos_order)
 
 # create gender dummy
 combined_data$gender_dum <- ifelse(combined_data$GENDER == "F", 1, 0)
-combined_data$GENDER <- NULL
-
-# write out to csv:
-
-write_rds(combined_data, "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/combined_common_frequencies.rds")
-
 # remove non-modelling variables:
 modelling_data <- combined_data
 modelling_data$PATIENT_ID <- NULL
+modelling_data$GENDER <- NULL
 modelling_data$index_date <- NULL
 modelling_data$lookback_date <- NULL
 # D_3592 is the dirty PPP code. Therefore it shouldn't be included in the
