@@ -22,29 +22,35 @@ library(cluster)
 Source a function file. 
 
 ```{r}
-path <- "C:/Users/ODoyle/Documents/dev/feature_selection/"
-setwd(path)
-source("02_code/fs_funtions.R")
+path <- "F:/Projects/Strongbridge/data/feature_selection/"
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Remove_3592/"
+ 
+ source("C:/Users/ODoyle/Documents/dev/feature_selection/02_code/fs_funtions.R")
 ```
 
 Read the training data.  
 ```{r}
-df <- read.csv(paste0(path, "/01_data/cluster_dfs/strongbridge/", "df_tr_clust.csv"), stringsAsFactors = FALSE)
+df <- readRDS(paste0(path, "train_clustering_rm_3592.rds"))
 
 ```
 
 Read the var_config file which will inform which varaibles should be used for clustering. 
 
 ```{r}
-var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
-var_config <- readr::read_csv(var_config_file)
-var_config <- rbind(var_config, c("label", "outcome"))
+# var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
+# var_config <- readr::read_csv(var_config_file)
+# var_config <- rbind(var_config, c("label", "outcome"))
+# 
+# var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
+# df[,var_inc_list$Column] -> vdf
+# 
+# vvdf <-as.data.frame(t(vdf))
 
-var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
-df[,var_inc_list$Column] -> vdf
+# Reduce dataframe to only those variables to be used for clustering. 
+# Then transpose.
+vdf <- df %>% select(contains("CLAIM"))
 
-vvdf <-as.data.frame(t(vdf))
-
+vvdf <- t(vdf)
 ```
 
 
@@ -59,7 +65,7 @@ The chosen linkage method was "average". Average-linkage calculates the distance
 
 
 ```{r}
-cmat_raw<-cor(vdf,method="spearman")
+cmat_raw <- cor(vdf,method="spearman")
 cmat_raw[is.na(cmat_raw)]=0
 hist(cmat_raw)
 ```
@@ -79,6 +85,7 @@ The within sum of squares is the sum of squared difference from each data point 
 ```{r}
 
 wss_all <- NULL
+# I'm not sure I understand this step:
 upper <- log2(ncol(vdf)-1)
 c_seq <-  2^seq(1, upper, 0.25)
 
@@ -94,7 +101,7 @@ $$s(i) = \frac{b(i) - a(i)}{max(a(i), b(i))}$$
 where a(i) is the average distance between i and all all variables in the same cluster and b(i) is the lowest distance of i to any other cluster of which it is not a member. 
 
 ```{r}
-#silhouette
+# silhouette
 upper <- log2(ncol(vdf)-1)
 c_seq <-  round(2^seq(1, upper, 0.2))
 silh_all <- NULL
@@ -121,10 +128,11 @@ Variables that belong to the same cluster can be aggregated using various summar
 ```{r}
 
 cvdf <- cbind(vvdf, hc_cut)
-
+cvdf <- as.data.frame(cvdf)
 cvdf %>% 
   group_by(hc_cut) %>% 
   summarise_each(funs(mean)) -> ccvdf
+ccvdf$hc_cut <- NULL
 agg_vdf <- cbind(df$label, as.data.frame(t(ccvdf)))												   
 ```
 
@@ -157,10 +165,10 @@ The results of the clustering are stored in two forms - the aggregated variables
 
 
 ```{r}
-#write_rds(hc, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_obj.rds"))
-#write_rds(hc_cut, paste0(path, "/01_data/cluster_dfs/strongbridge/", "hc_cut.rds"))
-#write_rds(agg_vdf, paste0(path, "/01_data/cluster_dfs/strongbridge/", "x_clustering_tr_agg_sum.rds"))
-write_csv(clust_memb, paste0(path, "/01_data/cluster_dfs/strongbridge/", "clust_memb_table.csv"), na="")
+write_rds(hc, paste0(results_dir, "hc_obj.rds"))
+write_rds(hc_cut, paste0(results_dir, "hc_cut.rds"))
+write_rds(agg_vdf, paste0(results_dir, "x_clustering_tr_agg_sum.rds"))
+write_csv(clust_memb, paste0(results_dir, "clust_memb_table.csv"), na="")
 ```
 
 

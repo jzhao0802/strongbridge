@@ -39,8 +39,9 @@ combined_data <- bind_rows(Neg_freq, Pos_order)
 combined_data$gender_dum <- ifelse(combined_data$GENDER == "F", 1, 0)
 combined_data$GENDER <- NULL
 
-# write out to csv:
+# write out to csv
 write_rds(combined_data, "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/combined_common_frequencies.rds")
+
 
 # split the data for clustering into training and testing:
 split_data <- sample.split(combined_data$label, SplitRatio = 0.75)
@@ -50,4 +51,13 @@ test_clusters <- combined_data[!split_data, ]
 # write training and testing sets to rds:
 write_rds(train_clusters, "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/train_clustering.rds")
 write_rds(test_clusters, "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/test_clustering.rds")
+
+# create cluster datasets with D_3592 removed:
+train_cluster_rm_3592 <- read_rds("F:/Projects/Strongbridge/data/feature_selection/train_clustering.rds")
+train_cluster_rm_3592$D_3592_AVG_CLAIM_CNT <- NULL
+test_cluster_rm_3592 <- read_rds("F:/Projects/Strongbridge/data/feature_selection/test_clustering.rds")
+test_cluster_rm_3592$D_3592_AVG_CLAIM_CNT <- NULL
+
+write_rds(train_cluster_rm_3592, "F:/Projects/Strongbridge/data/feature_selection/train_clustering_rm_3592.rds")
+write_rds(test_cluster_rm_3592, "F:/Projects/Strongbridge/data/feature_selection/test_clustering_rm_3592.rds")
 
