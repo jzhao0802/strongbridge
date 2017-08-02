@@ -45,6 +45,25 @@ setdiff(colnames(flag_neg), colnames(flag_pos))
 
 
 # ---------------------------------------------------------
+# Freq including 0s in means
+# ---------------------------------------------------------
+
+pos_freq_counts_inc_0 <- uni_mean(freq_pos, "Pos_Count_")
+neg_freq_counts_inc_0 <- uni_mean(freq_neg, "Neg_Count_")
+
+all_freq_counts_inc_0 <- merge(pos_freq_counts_inc_0, neg_freq_counts_inc_0, by = "Variable", all.x = T, all.y = T) %>% 
+  mutate(Variable_Stem = strsplit(Variable, "_AVG_CLAIM_CNT") %>% as.character)
+all_freq_counts_inc_0[is.na(all_freq_counts_inc_0)] <- 0
+
+write.csv(all_freq_counts_inc_0, paste0(outdir, "freq_counts_inc_0.csv"), row.names = F)
+
+
+
+
+
+
+
+# ---------------------------------------------------------
 # Flags
 # ---------------------------------------------------------
 
@@ -100,7 +119,6 @@ all_freq_counts <- merge(pos_freq_counts, neg_freq_counts, by = "Variable", all.
 all_freq_counts[is.na(all_freq_counts)] <- 0
 
 write.csv(all_freq_counts, paste0(outdir, "freq_counts.csv"), row.names = F)
-
 
 
 # ---------------------------------------------------------
@@ -238,6 +256,21 @@ uni_summary <- function(df, label) {
   }
   return(counts)
 }
+
+uni_mean <- function(df, label) {
+  num_cols <- length(names(df))
+  
+  counts <- data.frame(matrix(nrow = num_cols, ncol = 2))
+  colnames(counts)[1] <- "Variable"
+  colnames(counts)[2] <- paste0(label, "Mean")
+  
+  for (i in 1:num_cols) {
+    counts[i,1] <- names(df)[i]
+    counts[i,2] <- mean(df[, i], na.rm=T) 
+  }
+  return(counts)
+}
+
 
 
 loc_com <- function(df) {
