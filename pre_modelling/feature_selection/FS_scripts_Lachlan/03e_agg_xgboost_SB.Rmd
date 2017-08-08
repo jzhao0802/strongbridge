@@ -1,0 +1,88 @@
+---
+title: "LASSO applied to aggregated variables"
+author: "Orla"
+date: "July 5, 2017"
+output: html_document
+---
+#Libraries
+
+Set up libraries needed. 
+
+```{r lib_load, message = FALSE}
+library(tidyverse)
+library(grpreg)
+library(gglasso)
+library(palabmod)
+```
+
+
+
+```{r}
+data_dir <- "F:/Projects/Strongbridge/data/feature_selection/"
+# setwd(path)
+ source("C:/Users/ODoyle/Documents/dev/feature_selection/02_code/fs_funtions.R")
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Agg_XGBoost_ex_3592/"
+
+```
+
+#Read data 
+Read the training set which has already been aggregated.   
+```{r}
+adf_tr <- read_rds(paste0(results_dir, "x_clustering_tr_agg_sum_750.rds"))
+colnames(adf_tr)[1] <- "label"
+# adf_tr[is.na(adf_tr)]=0
+# set the 392 cluster to NULL to see how it affects the PR curve and VI table realtive
+# to the raw XGBoost result.
+adf_tr$V257 <- NULL
+## 
+```
+
+Read in the test data and cluster membership and use this to create aggregated variables for the test set. 
+
+```{r}
+df_ts <- read_rds(paste0(data_dir, "test_clustering_rm_3592.rds"))
+df_ts %>% dplyr::select(contains("CLAIM")) -> df_ts_nolabel
+hc <- read_rds(paste0(results_dir, "hc_cut_750.rds"))
+tdf_ts <- as.data.frame(t(df_ts_nolabel))
+ctdf_ts <- cbind(tdf_ts, hc)
+
+ctdf_ts %>% 
+  group_by(hc) %>% 
+  summarise_each(funs(mean)) %>% 
+  dplyr::select(-hc) -> actdf_ts
+
+adf_ts <- cbind(df_ts$label, as.data.frame(t(actdf_ts)))
+colnames(adf_ts)[1] <- "label"
+adf_ts$V257 <- NULL
+```
+
+#Modelling
+Apply a logistic regression model with LASSO penalty to the aggreated variables in the training dataset. 
+```{r}
+tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(adf_tr, -label), as.numeric)))
+xgb.fit <- xgboost(data = tr_data, label = adf_tr$label,
+max_depth = 6, eta = 0.3, nthread = 2, nrounds = 100,
+objective = "binary:logistic")
+
+```
+Apply the trained model to the test dataset and extract the variable importance. 
+```{r}
+ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(adf_ts, -label), as.numeric)))
+xgb.pred <- predict(xgb.fit, newdata = ts_data)
+write_rds(xgb.fit ,paste0(results_dir,"fit_xgb_cluster_mean_750.rds"))
+```
+
+Compute the importance table for the trained xgboost model.
+```{r}
+importance_matrix <- xgb.importance(colnames(ts_data), model = xgb.fit)
+write.csv(importance_matrix ,paste0(results_dir,"vi_xgb_cluster_mean_750.csv"))
+```
+#Performance
+To assess the performance of the model a precision-recall curve is used. 
+
+```{r}
+pr_xgb <- get_curve(xgb.pred, adf_ts$label, "rec", "prec")
+pr_xgb_bin <- bin_curve(pr_xgb, 20, agg_func=mean)
+plot(pr_xgb_bin$x_binned, pr_xgb_bin$y)
+write.csv(pr_xgb_bin ,paste0(results_dir,"pr_xgb_cluster_mean_750.csv"))
+```

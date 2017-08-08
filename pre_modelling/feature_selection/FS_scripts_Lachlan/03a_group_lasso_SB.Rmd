@@ -12,6 +12,7 @@ Set up libraries needed.
 library(tidyverse)
 library(grpreg)
 library(gglasso)
+library(palabmod)
 ```
 
 
@@ -38,7 +39,7 @@ Crude correction for missing values.
 ```{r}
 # Missing vals already imputed
 # df_tr[is.na(df_tr)] <- 0 
-# df_ts[is.na(df_ts)] <- 0 
+# df_ts[is.na(df_ts)] <- 0
 ```
 
 
@@ -95,8 +96,8 @@ plot(grpl.fit)
 ```
 
 ```{r}
-#grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
-#plot(grpl.cvfit)
+grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+plot(grpl.cvfit)
 #grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
 ```
 
@@ -105,9 +106,12 @@ Use the trained model to provide predictions on the test set. This requires that
 
 ```{r}
 #ts_data<- data.matrix(dplyr::select(vdf_ts, -label))
-ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
+#ts_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_ts, -label), as.numeric)))
 ts_data <-  as.matrix(dplyr::select(vdf_ts, -label))
-grpl.pred <- predict(grpl.fit, ts_data, type="response", s = lambda_user)
+# grpl.pred <- predict(grpl.fit, ts_data, type="response", s = lambda_user)
+# I altered the code to the following:
+grpl.pred.all <- predict(grpl.fit, ts_data, type="response", s = lambda_user)
+grpl.pred <- grpreg:::predict.grpreg(grpl.fit, ts_data, type="response", lambda = lambda_user)
 
 #grpl.pred <- predict(grpl.fit,type="link",newx=ts_data, s=0.0001)
 #grpl.prob <- exp(grpl.pred_ts)/(1+exp(grpl.pred_ts))
@@ -120,7 +124,7 @@ To assess the performance of the model a precision-recall curve is used.
 pr_grpl <- get_curve(grpl.pred, vdf_ts$label, "rec", "prec")
 pr_grpl_bin <- bin_curve(pr_grpl, 20, agg_func=mean)
 plot(pr_grpl_bin$x_binned, pr_grpl_bin$y)
-write.csv(pr_grpl_bin,paste0(results_dir,"/01_data/cluster_dfs/gilead/pr_glasso_cluster.csv"))
+write.csv(pr_grpl_bin,paste0(results_dir,"lam_0.00014_pr_glasso_cluster.csv"))
 ```
 
 

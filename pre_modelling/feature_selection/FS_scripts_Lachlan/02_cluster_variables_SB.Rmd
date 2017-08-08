@@ -23,7 +23,7 @@ Source a function file.
 
 ```{r}
 path <- "F:/Projects/Strongbridge/data/feature_selection/"
-results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Remove_3592/"
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Lasso_top_coded/"
  
  source("C:/Users/ODoyle/Documents/dev/feature_selection/02_code/fs_funtions.R")
 ```
@@ -35,16 +35,12 @@ df <- readRDS(paste0(path, "train_clustering_rm_3592.rds"))
 ```
 
 Read the var_config file which will inform which varaibles should be used for clustering. 
+Top code the dataset
 
 ```{r}
-# var_config_file <- stringr::str_c(path, "/01_data/sb_ppp_var_config.csv")
-# var_config <- readr::read_csv(var_config_file)
-# var_config <- rbind(var_config, c("label", "outcome"))
-# 
-# var_config %>% filter((Type == "numerical") | (Type == "categorical")) %>% dplyr::select(Column) -> var_inc_list
-# df[,var_inc_list$Column] -> vdf
-# 
-# vvdf <-as.data.frame(t(vdf))
+
+# TOP CODE:
+df <- topcode(input = )
 
 # Reduce dataframe to only those variables to be used for clustering. 
 # Then transpose.
@@ -84,16 +80,16 @@ The within sum of squares is the sum of squared difference from each data point 
 
 ```{r}
 
-wss_all <- NULL
-# I'm not sure I understand this step:
-upper <- log2(ncol(vdf)-1)
-c_seq <-  2^seq(1, upper, 0.25)
-
-for(j in c_seq){
-  wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
-}
-
-plot(c_seq,wss_all)
+# wss_all <- NULL
+# # I'm not sure I understand this step:
+# upper <- log2(ncol(vdf)-1)
+# c_seq <-  2^seq(1, upper, 0.25)
+# 
+# for(j in c_seq){
+#   wss_all<- rbind(wss_all, wss_wrap(j, hc, vvdf))
+# }
+# 
+# plot(c_seq,wss_all)
 ```
 
 The silhouette width measures how similar a variable is to it's own cluster compared to other clusters. The silhouette width can range from -1 to 1, where values approaching 1 suggest a good fit and values approaching -1 suggest that the variable has not been assigned to the optimal cluster. It is calculated as 
@@ -102,20 +98,20 @@ where a(i) is the average distance between i and all all variables in the same c
 
 ```{r}
 # silhouette
-upper <- log2(ncol(vdf)-1)
-c_seq <-  round(2^seq(1, upper, 0.2))
-silh_all <- NULL
-for(j in c_seq){
-  ss <- silhouette(cutree(hc, k=j),distance)
-  silh_all <- rbind(silh_all, median(ss[,3]))
-}
-plot(c_seq, silh_all)
+# upper <- log2(ncol(vdf)-1)
+# c_seq <-  round(2^seq(1, upper, 0.2))
+# silh_all <- NULL
+# for(j in c_seq){
+#   ss <- silhouette(cutree(hc, k=j),distance)
+#   silh_all <- rbind(silh_all, median(ss[,3]))
+# }
+# plot(c_seq, silh_all)
 ```
 
 Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
-Nc <-400
+Nc <-750
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 ```
@@ -165,10 +161,10 @@ The results of the clustering are stored in two forms - the aggregated variables
 
 
 ```{r}
-write_rds(hc, paste0(results_dir, "hc_obj.rds"))
-write_rds(hc_cut, paste0(results_dir, "hc_cut.rds"))
-write_rds(agg_vdf, paste0(results_dir, "x_clustering_tr_agg_sum.rds"))
-write_csv(clust_memb, paste0(results_dir, "clust_memb_table.csv"), na="")
+write_rds(hc, paste0(results_dir, "hc_obj_750.rds"))
+write_rds(hc_cut, paste0(results_dir, "hc_cut_750.rds"))
+write_rds(agg_vdf, paste0(results_dir, "x_clustering_tr_agg_sum_750.rds"))
+write_csv(clust_memb, paste0(results_dir, "clust_memb_table_750.csv"), na="")
 ```
 
 

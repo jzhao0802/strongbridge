@@ -2,12 +2,13 @@
 #  ------------------------------------------------------------------------
 # RUNNING XGBOOST ON FREQUENCY DATA TO EXTRACT VARIABLE IMPORTANCE
 #  ------------------------------------------------------------------------
-library(mrl)
+library(mlr)
 library(tidyverse)
 library(stringr)
 library(palabmod)
 library(xgboost)
 
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/XGBoost_method_ex_D_3592_cluster/"
 
 # DATA IN -----------------------------------------------------------------
 
@@ -40,8 +41,20 @@ combined_data$GENDER <- NULL
 
 write_rds(combined_data, "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/combined_common_frequencies.rds")
 
+
+# DATA IN -----------------------------------------------------------------
+
+# combined_data <- read_rds("F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection/combined_common_frequencies.rds")
+
+cluster_tr_data <- read_rds("F:/Projects/Strongbridge/data/feature_selection/train_clustering_rm_3592_capped_p99.rds")
+cluster_ts_data <- read_rds("F:/Projects/Strongbridge/data/feature_selection/test_clustering_rm_3592_capped_p99.rds")
+
+all.equal(colnames(cluster_tr_data), colnames(cluster_ts_data))
+combined_data <- bind_rows(cluster_ts_data, cluster_tr_data)
+
 # remove non-modelling variables:
 modelling_data <- combined_data
+modelling_data$test_patient_id <- NULL
 modelling_data$PATIENT_ID <- NULL
 modelling_data$index_date <- NULL
 modelling_data$lookback_date <- NULL
@@ -49,10 +62,17 @@ modelling_data$lookback_date <- NULL
 # modelling data. Nor should lookback in days
 modelling_data$D_3592_AVG_CLAIM_CNT <- NULL
 modelling_data$lookback_days <- NULL
+modelling_data$test_patient_id <- NULL
 modelling_data$label <- as.factor(modelling_data$label)
 
-# Other variable manipulation (e.g. subsetting by variable importance)
+# ADDITIONAL EXCLUSIONS: --------------------------------------------------
+modelling_data$D_3590_AVG_CLAIM_CNT <- NULL
+modelling_data$D_3591_AVG_CLAIM_CNT <- NULL
+modelling_data$D_3599_AVG_CLAIM_CNT <- NULL
 
+
+# Other variable manipulation (e.g. subsetting by variable importance)
+importance <- read_csv("F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_importance.csv")
 # SELECTING ONLY THE TOP 300 VARIABLES BY XGBOOST IMPORTANCE :
 features_index <- c(which(colnames(modelling_data) == "label"), 
               which(colnames(modelling_data) %in% importance$Feature[1:1000]))
@@ -87,14 +107,16 @@ pr_resam <- palabmod::perf_binned_perf_curve(resam$pred,
                                              y_metric = "prec",
                                              agg_func = mean)
 
-write_csv(pr_resam$curve, "F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_freq_top__predictors.csv")
+write_csv(pr_resam$curve, paste0(results_dir, "01_XGBoost_freq_top__predictors_ex_3592_clust.csv"))
 
 xgb_model <- train(learner = lrn_xgb, task = model_data)
 
 detailed_importance <- xgb.importance(model = xgb_model$learner.model, feature_names = colnames(model_data$env$data),
                              data = as.matrix(model_data$env$data), label = model_data$env$data$label)
 
-write_csv(importance, "F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_importance.csv")
+importance <- xgb.importance(model = xgb_model$learner.model, feature_names = xgb_model$features)
+
+write_csv(importance, paste0(results_dir, "01_XGBoost_importance_ex_3592_clust.csv"))
 
 
 
