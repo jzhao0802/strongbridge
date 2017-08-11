@@ -8,7 +8,7 @@ library(stringr)
 library(palabmod)
 library(xgboost)
 
-results_dir <- "F:/Projects/Strongbridge/results/feature_selection/XGBoost_method_ex_D_3592_cluster/"
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/XGBoost_method_topcoded/"
 
 # DATA IN -----------------------------------------------------------------
 
@@ -65,18 +65,14 @@ modelling_data$lookback_days <- NULL
 modelling_data$test_patient_id <- NULL
 modelling_data$label <- as.factor(modelling_data$label)
 
-# ADDITIONAL EXCLUSIONS: --------------------------------------------------
-modelling_data$D_3590_AVG_CLAIM_CNT <- NULL
-modelling_data$D_3591_AVG_CLAIM_CNT <- NULL
-modelling_data$D_3599_AVG_CLAIM_CNT <- NULL
 
 
 # Other variable manipulation (e.g. subsetting by variable importance)
-importance <- read_csv("F:/Projects/Strongbridge/results/feature_selection/01_XGBoost_importance.csv")
+importance <- read_csv("F:/Projects/Strongbridge/results/feature_selection/XGBoost_method_topcoded/VI_topcode_raw_XGBoost.csv")
 # SELECTING ONLY THE TOP 300 VARIABLES BY XGBOOST IMPORTANCE :
 features_index <- c(which(colnames(modelling_data) == "label"), 
-              which(colnames(modelling_data) %in% importance$Feature[1:1000]))
-modelling_data_subset <- modelling_data
+              which(colnames(modelling_data) %in% importance$Feature[1:500]))
+modelling_data_subset <- modelling_data[,features_index]
 colnames(modelling_data_subset)
 # MODELLING ---------------------------------------------------------------
 
@@ -107,7 +103,7 @@ pr_resam <- palabmod::perf_binned_perf_curve(resam$pred,
                                              y_metric = "prec",
                                              agg_func = mean)
 
-write_csv(pr_resam$curve, paste0(results_dir, "01_XGBoost_freq_top__predictors_ex_3592_clust.csv"))
+write_csv(pr_resam$curve, paste0(results_dir, "pr_topcode_raw_XGBoost_top_500.csv"))
 
 xgb_model <- train(learner = lrn_xgb, task = model_data)
 
@@ -116,7 +112,7 @@ detailed_importance <- xgb.importance(model = xgb_model$learner.model, feature_n
 
 importance <- xgb.importance(model = xgb_model$learner.model, feature_names = xgb_model$features)
 
-write_csv(importance, paste0(results_dir, "01_XGBoost_importance_ex_3592_clust.csv"))
+write_csv(importance, paste0(results_dir, "VI_topcode_raw_XGBoost.csv"))
 
 
 

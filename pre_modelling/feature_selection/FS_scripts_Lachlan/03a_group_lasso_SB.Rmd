@@ -21,7 +21,7 @@ library(palabmod)
 data_dir <- "F:/Projects/Strongbridge/data/feature_selection/"
 # setwd(path)
  source("C:/Users/ODoyle/Documents/dev/feature_selection/02_code/fs_funtions.R")
-results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Remove_3592/"
+results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Lasso_top_coded/"
 
 ```
 
@@ -29,8 +29,8 @@ results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/Re
 #Read data 
 Read the training and test data. 
 ```{r}
-df_tr <- read_rds(paste0(data_dir, "train_clustering_rm_3592.rds"))
-df_ts <- read_rds(paste0(data_dir, "test_clustering_rm_3592.rds"))
+df_tr <- read_rds(paste0(data_dir, "train_clustering_rm_3592_capped_p99.rds"))
+df_ts <- read_rds(paste0(data_dir, "test_clustering_rm_3592_capped_p99.rds"))
 
 
 ```
@@ -46,8 +46,8 @@ Crude correction for missing values.
 Extract the appropriate variables which in this case are the frequency variables. 
 
 ```{r}
-df_tr %>% dplyr::select(label, contains("CLAIM")) -> vdf_tr
-df_ts %>% dplyr::select(label, contains("CLAIM")) -> vdf_ts
+df_tr %>% dplyr::select(label, dplyr::contains("CLAIM")) -> vdf_tr
+df_ts %>% dplyr::select(label, dplyr::contains("CLAIM")) -> vdf_ts
 
 # set D_3592 to 0
 
@@ -56,7 +56,7 @@ df_ts %>% dplyr::select(label, contains("CLAIM")) -> vdf_ts
 Read in the cluster memberships. These will serve as the groupings for group LASSO. 
 
 ```{r}
-hc <- read_rds(paste0(results_dir, "hc_cut.rds"))
+hc <- read_rds(paste0(results_dir, "hc_cut_400.rds"))
 ```
 
 
@@ -71,6 +71,7 @@ tr_data <-  as.matrix(as.data.frame(lapply(dplyr::select(vdf_tr, -label), as.num
 grpl.fit <- grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial")
 write_rds(grpl.fit,paste0(results_dir,"fit_glasso_cluster.rds"))
 
+grpl.fit <- read_rds(paste0(results_dir,"fit_glasso_cluster.rds"))
 # find which lambda corresponds to approx 300 predictors:
 vars_per_lambda <- apply(grpl.fit$beta, 2, function(x) { length(x[abs(x) > 0])})
 
@@ -85,8 +86,8 @@ Note that the CV does not take into account the imbalance in the data so may not
 ```{r}
 # lambda_user <- 0.00001
 lambda_user <- 0.0014
-lasso.cvfit.coef <- as.data.frame(as.matrix(coef(grpl.fit, s = "lambda.min")))
-write_csv(lasso.cvfit.coef,paste0(results_dir,"vi_glasso_cluster.csv"))
+#lasso.cvfit.coef <- as.data.frame(as.matrix(coef(grpl.fit, s = "lambda.min")))
+#write_csv(lasso.cvfit.coef,paste0(results_dir,"vi_glasso_cluster.csv"))
 ```
 
 Once the model has been fitted, the weights of the coefficients can plotted against lambda. 
@@ -96,8 +97,8 @@ plot(grpl.fit)
 ```
 
 ```{r}
-grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
-plot(grpl.cvfit)
+# grpl.cvfit <- cv.grpreg(tr_data, vdf_tr$label, hc, penalty = "grLasso",family="binomial", nfolds = 5)
+#plot(grpl.cvfit)
 #grpl.cvfit <- cv.gglasso(tr_data, tr_label, group=hc, loss = "logit", pred.loss = "loss", nfolds = 5)
 ```
 

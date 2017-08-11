@@ -13,6 +13,7 @@ Set up libraries needed.
 ```{r lib_load, message = FALSE}
 library(tidyverse)
 library(cluster)
+library(magrittr)
 ```
 
 
@@ -30,7 +31,7 @@ results_dir <- "F:/Projects/Strongbridge/results/feature_selection/Clustering/La
 
 Read the training data.  
 ```{r}
-df <- readRDS(paste0(path, "train_clustering_rm_3592.rds"))
+df <- readRDS(paste0(path, "train_clustering_rm_3592_capped_p99.rds"))
 
 ```
 
@@ -39,12 +40,9 @@ Top code the dataset
 
 ```{r}
 
-# TOP CODE:
-df <- topcode(input = )
-
 # Reduce dataframe to only those variables to be used for clustering. 
 # Then transpose.
-vdf <- df %>% select(contains("CLAIM"))
+vdf <- dplyr::select(df, dplyr::contains("CLAIM"))
 
 vvdf <- t(vdf)
 ```
@@ -111,7 +109,7 @@ where a(i) is the average distance between i and all all variables in the same c
 Assuming the number of clusters has been selected as 400. **EDIT - please manually insert the final number of clusters before proceeding.**
 
 ```{r}
-Nc <-750
+Nc <-400
 hc_cut <- cutree(hc, k=Nc)
 table(hc_cut)
 ```
@@ -161,10 +159,10 @@ The results of the clustering are stored in two forms - the aggregated variables
 
 
 ```{r}
-write_rds(hc, paste0(results_dir, "hc_obj_750.rds"))
-write_rds(hc_cut, paste0(results_dir, "hc_cut_750.rds"))
-write_rds(agg_vdf, paste0(results_dir, "x_clustering_tr_agg_sum_750.rds"))
-write_csv(clust_memb, paste0(results_dir, "clust_memb_table_750.csv"), na="")
+write_rds(hc, paste0(results_dir, "hc_obj_400.rds"))
+write_rds(hc_cut, paste0(results_dir, "hc_cut_400.rds"))
+write_rds(agg_vdf, paste0(results_dir, "x_clustering_tr_agg_sum_400.rds"))
+write_csv(clust_memb, paste0(results_dir, "clust_memb_table_400.csv"), na="")
 ```
 
 
