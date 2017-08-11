@@ -10,7 +10,7 @@ Date_data <- read_rds(paste0("PATH",
 
 
 # 2. FORMAT DATE DATA. Note this doesn't yet work for the 84 date variales in the
-# procedures data because the date formate is different. But it does work for the
+# procedures data because the date format is different. But it does work for the
 # 3192 other date vaiables.
 formatted_dates <- date_format(input_data = Date_data, date_pattern = "EXP_DT",
                                PATIENT_ID_col = "PATIENT_ID")
