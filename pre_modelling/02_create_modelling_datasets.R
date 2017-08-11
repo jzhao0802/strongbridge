@@ -50,7 +50,17 @@ combined_freq_select <- combined_freq[, features_index_freq]
 
 # DATES
 # columns with the features we want:
-features_index_dates <- grep(paste(features$Variable_Stem, collapse = "|"))
+features_index_dates <- grep(paste(features$Variable_Stem, collapse = "|"), colnames(combined_dates))
+combined_dates_select <- combined_dates[, features_index_dates]
+
+which(sapply(combined_freq_select, class) == "numeric")
+
+
+# Write out results -------------------------------------------------------
+
+write_rds(combined_freq_select, paste0(output_dir, "01_combined_common_frequencies.rds"))
+write_rds(combined_dates_select, paste0(output_dir, "01_combined_dates_unformatted.rds"))
+
 # FUNCTIONS ---------------------------------------------------------------
 
 # function to topcode
