@@ -41,8 +41,16 @@ combined_dates <- rbind(pos_dates_order, raw_neg_dates)
 
 # SELECT MODELLING FEATURES -----------------------------------------------
 
-features <- 
+features <- read_csv("F:/Projects/Strongbridge/data/modelling/list_of_features.csv")
 
+# FREQUENCIES
+# columns with the features we want:
+features_index_freq <- grep(paste(features$Variable_Stem, collapse = "|"), colnames(combined_freq))
+combined_freq_select <- combined_freq[, features_index_freq]
+
+# DATES
+# columns with the features we want:
+features_index_dates <- grep(paste(features$Variable_Stem, collapse = "|"))
 # FUNCTIONS ---------------------------------------------------------------
 
 # function to topcode
