@@ -41,6 +41,9 @@ combined_dates <- rbind(pos_dates_order, raw_neg_dates)
 
 # SELECT MODELLING FEATURES -----------------------------------------------
 
+# READ IN DATA IF HAVEN'T ALREADY
+
+# list of features:
 features <- read_csv("F:/Projects/Strongbridge/data/modelling/list_of_features.csv")
 
 # FREQUENCIES
