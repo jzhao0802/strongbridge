@@ -10,6 +10,11 @@ suffix12 <- "_12"
 path13 <- "F:/Projects/Strongbridge/data/Cohorts/05_Cohorts_by_variable_type_13_months/"
 suffix13 <- "_13"
 
+# For complete
+path <- "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Modelling/"
+suffix <- ""
+
+
 # ---------------------------------------------------------
 # Load data
 # ---------------------------------------------------------
@@ -27,6 +32,13 @@ freq_pos13 <- sapply(freq_pos13, as.numeric) %>% data.frame
 freq_neg13 <- read_rds(paste0(path13, "Neg_common_frequencies_MOD", suffix13, ".rds")) %>%
   select(-PATIENT_ID, -label, -AGE, -GENDER, -index_date, -lookback_date, -lookback_days)
 freq_neg13 <- sapply(freq_neg13, as.numeric) %>% data.frame
+
+freq_pos <- read_rds(paste0(path, "Pos_common_frequencies_MOD", suffix, ".rds")) %>%
+  select(-PATIENT_ID, -label, -AGE, -GENDER, -index_date, -lookback_date, -lookback_days)
+freq_pos <- sapply(freq_pos, as.numeric) %>% data.frame
+freq_neg <- read_rds(paste0(path, "Neg_common_frequencies_MOD", suffix, ".rds")) %>%
+  select(-PATIENT_ID, -label, -AGE, -GENDER, -index_date, -lookback_date, -lookback_days)
+freq_neg <- sapply(freq_neg, as.numeric) %>% data.frame
 
 # ---------------------------------------------------------
 # Overall
@@ -47,3 +59,5 @@ pos_13 <- nadea(freq_pos13)
 neg_12 <- nadea(freq_neg12 %>% select(-test_patient_id))
 neg_13 <- nadea(freq_neg13 %>% select(-test_patient_id))
 
+pos_co <- nadea(freq_pos)
+neg_co <- nadea(freq_neg %>% select(-test_patient_id))

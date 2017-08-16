@@ -5,62 +5,47 @@ library(lubridate)
 # For complete
 path <- "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Modelling/"
 outdir <- "F:/Projects/Strongbridge/results/descriptive_stats/Complete/"
-suffix <- ""
+suffix <- "_MOD"
 
+# For complete FS
+path <- "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/Feat_selection//"
+outdir <- "F:/Projects/Strongbridge/results/descriptive_stats/Complete_FS/"
+suffix <- "_FS"
 
 # For 12 month lookback
 path <- "F:/Projects/Strongbridge/data/Cohorts/03_Cohorts_by_variable_type_12_months/"
 outdir <- "F:/Projects/Strongbridge/results/descriptive_stats/12_month_lookback/"
-suffix <- "_12"
+suffix <- "_MOD_12"
 
 
 # For 13 month plus lookback
 path <- "F:/Projects/Strongbridge/data/Cohorts/05_Cohorts_by_variable_type_13_months/"
 outdir <- "F:/Projects/Strongbridge/results/descriptive_stats/13_month_plus/"
-suffix <- "_13"
+suffix <- "_MOD_13"
 
 # ---------------------------------------------------------
 # Load data
 # ---------------------------------------------------------
 
-flag_pos <- read_rds(paste0(path, "Pos_flags_MOD", suffix, ".rds"))
+flag_pos <- read_rds(paste0(path, "Pos_flags", suffix, ".rds"))
 flag_pos <- sapply(flag_pos, as.numeric) %>% data.frame
-flag_neg <- read_rds(paste0(path, "Neg_flags_MOD", suffix, ".rds"))
+flag_neg <- read_rds(paste0(path, "Neg_flags", suffix, ".rds"))
 flag_neg <- sapply(flag_neg, as.numeric) %>% data.frame
 
-claims_pos <- read_rds(paste0(path, "Pos_claims_MOD", suffix, ".rds"))
+claims_pos <- read_rds(paste0(path, "Pos_claims", suffix, ".rds"))
 claims_pos <- sapply(claims_pos, as.numeric) %>% data.frame
-claims_neg <- read_rds(paste0(path, "Neg_claims_MOD", suffix, ".rds"))
+claims_neg <- read_rds(paste0(path, "Neg_claims", suffix, ".rds"))
 claims_neg <- sapply(claims_neg, as.numeric) %>% data.frame
 
-freq_pos <- read_rds(paste0(path, "Pos_common_frequencies_MOD", suffix, ".rds"))
+freq_pos <- read_rds(paste0(path, "Pos_common_frequencies", suffix, ".rds"))
 freq_pos <- sapply(freq_pos, as.numeric) %>% data.frame
-freq_neg <- read_rds(paste0(path, "Neg_common_frequencies_MOD", suffix, ".rds"))
+freq_neg <- read_rds(paste0(path, "Neg_common_frequencies", suffix, ".rds"))
 freq_neg <- sapply(freq_neg, as.numeric) %>% data.frame
 
 
-dates_pos <- read_rds(paste0(path, "Pos_dates_MOD", suffix, ".rds"))
+dates_pos <- read_rds(paste0(path, "Pos_dates", suffix, ".rds"))
 
 setdiff(colnames(flag_neg), colnames(flag_pos))
-
-
-# ---------------------------------------------------------
-# Freq including 0s in means
-# ---------------------------------------------------------
-
-pos_freq_counts_inc_0 <- uni_mean(freq_pos, "Pos_Count_")
-neg_freq_counts_inc_0 <- uni_mean(freq_neg, "Neg_Count_")
-
-all_freq_counts_inc_0 <- merge(pos_freq_counts_inc_0, neg_freq_counts_inc_0, by = "Variable", all.x = T, all.y = T) %>% 
-  mutate(Variable_Stem = strsplit(Variable, "_AVG_CLAIM_CNT") %>% as.character)
-all_freq_counts_inc_0[is.na(all_freq_counts_inc_0)] <- 0
-
-write.csv(all_freq_counts_inc_0, paste0(outdir, "freq_counts_inc_0.csv"), row.names = F)
-
-
-
-
-
 
 
 # ---------------------------------------------------------
@@ -80,19 +65,6 @@ all_flag_counts <- all_flag_counts %>%
   ) %>% 
   mutate(Variable_Stem = strsplit(Variable, "_FLAG") %>% as.character())
 write.csv(all_flag_counts, paste0(outdir, "flag_counts.csv"), row.names = F)
-
-# ---------------------------------------------------------
-# Location and complexity
-# ---------------------------------------------------------
-
-pos_flag_counts_lc <- flag_count(loc_com(flag_pos) %>% select(starts_with("L")), "Pos_")
-neg_flag_counts_lc <- flag_count(loc_com(flag_neg) %>% select(starts_with("L")), "Neg_")
-
-all_flag_counts_lc <- merge(pos_flag_counts_lc, neg_flag_counts_lc, 
-                            by = "Variable", all.x = T, all.y = T)
-
-write.csv(all_flag_counts_lc, paste0(outdir, "location_complexity_flag_counts.csv"), row.names = F)
-
 
 # ---------------------------------------------------------
 # Claims
@@ -153,6 +125,31 @@ all_res <- merge( all_res, date_summary_results %>% select(-Variable),
 
 write.csv(all_res, paste0(outdir, "All_Results_merged.csv"), row.names = F)
 
+# ---------------------------------------------------------
+# Location and complexity
+# ---------------------------------------------------------
+
+pos_flag_counts_lc <- flag_count(loc_com(flag_pos) %>% select(starts_with("L")), "Pos_")
+neg_flag_counts_lc <- flag_count(loc_com(flag_neg) %>% select(starts_with("L")), "Neg_")
+
+all_flag_counts_lc <- merge(pos_flag_counts_lc, neg_flag_counts_lc, 
+                            by = "Variable", all.x = T, all.y = T)
+
+write.csv(all_flag_counts_lc, paste0(outdir, "location_complexity_flag_counts.csv"), row.names = F)
+
+
+# ---------------------------------------------------------
+# Freq including 0s in means
+# ---------------------------------------------------------
+
+pos_freq_counts_inc_0 <- uni_mean(freq_pos, "Pos_Count_")
+neg_freq_counts_inc_0 <- uni_mean(freq_neg, "Neg_Count_")
+
+all_freq_counts_inc_0 <- merge(pos_freq_counts_inc_0, neg_freq_counts_inc_0, by = "Variable", all.x = T, all.y = T) %>% 
+  mutate(Variable_Stem = strsplit(Variable, "_AVG_CLAIM_CNT") %>% as.character)
+all_freq_counts_inc_0[is.na(all_freq_counts_inc_0)] <- 0
+
+write.csv(all_freq_counts_inc_0, paste0(outdir, "freq_counts_inc_0.csv"), row.names = F)
 
 
 # ---------------------------------------------------------
@@ -180,9 +177,18 @@ all_o_counts <- merge(pos_o_count, neg_o_count, by = "o_count", all.x=T, all.y=T
 all_o_counts[is.na(all_o_counts)] <- 0
 write.csv(all_o_counts, paste0(outdir, "overall_count_of_flags.csv"), row.names = F)
 
+# ---------------------------------------------------------
+# AD HOC
+# ---------------------------------------------------------
 
+flag_pos <- read_rds(paste0(path, "Pos_flags", suffix, ".rds"))
+flag_neg <- read_rds(paste0(path, "Neg_flags", suffix, ".rds"))
 
-
+adhoc <- merge(
+  flag_pos %>% group_by(G_797000_FLAG, D_2768_FLAG) %>% summarise(PosCount  = n()), 
+  flag_neg %>% group_by(G_797000_FLAG, D_2768_FLAG) %>% summarise(NegCount  = n()),
+  by = c("G_797000_FLAG", "D_2768_FLAG")
+)
 
 
 
