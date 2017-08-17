@@ -13,7 +13,7 @@ output_dir <- "F:/Projects/Strongbridge/data/modelling/"
 
 # Date in -----------------------------------------------------------------
 
-dates_unform <- read_rds(paste0(data_dir, "01_train_combined_dates_unformatted.rds"))
+dates_unform <- read_rds(paste0(data_dir, "02_Neg_dates_1_to_1000.rds"))
 
 
 # Format dates ------------------------------------------------------------
@@ -33,8 +33,8 @@ S_vars_dates[ ,last_cols] <- lapply(S_vars_dates[ , last_cols], function(x) { ce
 
 # convert 'D' G' and 'P' variables to correct format
 dates_form <-  date_format(input_data = dates_unform,
-                            date_pattern = "_EXP_DT",
-                            PATIENT_ID_col = "PATIENT_ID")
+                           date_pattern = "_EXP_DT",
+                           PATIENT_ID_col = "PATIENT_ID")
 
 # bind the two together
 dates_all <- cbind(dates_form, S_vars_dates)
@@ -51,7 +51,7 @@ date_diffs_combined <- data.frame(dates_unform[,1:5],
                                   date_differences)
 
 # write out to csv
-write_rds(date_diffs_combined, paste0(output_dir, "02_1_to_1000_combined_date_differences.rds"))
+write_rds(date_diffs_combined, paste0(output_dir, "01_train_combined_date_differences.rds"))
 
 # FUNCTIONS ---------------------------------------------------------------
 

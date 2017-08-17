@@ -56,7 +56,7 @@ combined_freq_select <- combined_freq[, features_index_freq]
 features_index_dates <- grep(paste(features$Variable_Stem, collapse = "|"), colnames(combined_dates))
 combined_dates_select <- combined_dates[, features_index_dates]
 
-which(sapply(combined_freq_select, class) == "numeric")
+which(sapply(combined_freq_select, class) == "character")
 
 
 # Write out results -------------------------------------------------------
@@ -64,14 +64,29 @@ which(sapply(combined_freq_select, class) == "numeric")
 write_rds(combined_freq_select, paste0(output_dir, "01_combined_common_frequencies.rds"))
 write_rds(combined_dates_select, paste0(output_dir, "01_combined_dates_unformatted.rds"))
 
+
+
+
 # FUNCTIONS ---------------------------------------------------------------
 
-# function to topcode
-topcode <- function(input, cap) {
+# function to topcode based on max cap over classes.
+topcode <- function(input, cap, label) {
+  # extract index of positives and negatives:
+  pos_index <- which(input[[label]] == 1)
+  neg_index <- which(input[[label]] == 0)
   
   capped <- sapply(input, function(x) { 
-    quant <- quantile(x, cap)
-    x[x > P99] <- quant
+    # segregate the vector into positives and negatives:
+    pos <- x[pos_index]
+    neg <- x[neg_index]
+    # work out which class has the higher cap:
+    quant_pos <- stats::quantile(pos, cap, na.rm = TRUE)
+    quant_neg <- stats::quantile(neg, cap, na.rm = TRUE)
+    quant <- max(quant_pos, quant_neg)
+    
+    # set anything in the dataset above this value to this value
+    x[x > quant] <- quant
+    
     return(x)
   })
   
