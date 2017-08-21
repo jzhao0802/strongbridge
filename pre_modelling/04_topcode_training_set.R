@@ -11,13 +11,13 @@ data_dir <-"F:/Projects/Strongbridge/data/modelling/"
 
 # Training frequencies ----------------------------------------------------
 
-training_freq_raw <- read_rds(paste0(data_dir, "01_combined_common_frequencies.rds"))
+training_freq_raw <- read_rds(paste0(data_dir, "01_train_combined_common_frequencies.rds"))
 
 # extract variable for topcoding and label:
 
 training_freq <- dplyr::select(training_freq_raw, label, dplyr::contains("CLAIM"))
 training_freq <- as.data.frame(sapply(training_freq, function(x) { as.numeric(as.character(x)) } ))
-training_freq_topcoded <- topcode(training_freq, 0.99, label = "label")
+training_freq_topcoded <- topcode_frequencies(training_freq, 0.99, label = "label")
 # bind with common variables:
 training_freq_combined <- data.frame(training_freq_raw[,1:7],
                                 training_freq_topcoded)
@@ -56,8 +56,8 @@ ex_freq_config <- data.frame(Variable = names(train_freq_max),
 ex_date_config <- data.frame(Variable = names(train_dates_max), 
                              Thrsh = train_dates_max)
 # write out
-write.csv(ex_freq_config, paste0(data_dir, "ex_val_caps_freq.csv"))
-write.csv(ex_date_config, paste0(data_dir, "ex_val_caps_dates.csv"))
+write_csv(ex_freq_config, paste0(data_dir, "ex_val_caps_freq.csv"))
+write_csv(ex_date_config, paste0(data_dir, "ex_val_caps_dates.csv"))
 
 
 # TOP CODING FUNCTION -----------------------------------------------------
@@ -76,6 +76,34 @@ topcode <- function(input, cap, label) {
     # work out which class has the higher cap:
     quant_pos <- stats::quantile(pos, cap, na.rm = TRUE)
     quant_neg <- stats::quantile(neg, cap, na.rm = TRUE)
+    quant <- max(quant_pos, quant_neg)
+    
+    # set anything in the dataset above this value to this value
+    x[x > quant] <- quant
+    
+    return(x)
+  })
+  
+  return(as.data.frame(capped))
+  
+}
+
+# slight alteration for frequencies: only use values above 0 for percentiles:
+
+topcode_frequencies <- function(input, cap, label) {
+  # extract index of positives and negatives:
+  pos_index <- which(input[[label]] == 1)
+  neg_index <- which(input[[label]] == 0)
+  # set label to NULL
+  input[[label]] <- NULL
+  # cap variables:
+  capped <- sapply(input, function(x) { 
+    # segregate the vector into positives and negatives:
+    pos <- x[pos_index]
+    neg <- x[neg_index]
+    # work out which class has the higher cap:
+    quant_pos <- stats::quantile(pos[pos > 0], cap, na.rm = TRUE)
+    quant_neg <- stats::quantile(neg[neg > 0], cap, na.rm = TRUE)
     quant <- max(quant_pos, quant_neg)
     
     # set anything in the dataset above this value to this value

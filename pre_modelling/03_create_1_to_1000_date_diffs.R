@@ -5,7 +5,7 @@
 
 library(lubridate)
 library(tidyverse)
-
+library(stringr)
 
 # Globals -----------------------------------------------------------------
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
@@ -19,9 +19,9 @@ dates_unform <- read_rds(paste0(data_dir, "02_Neg_dates_1_to_1000.rds"))
 # Format dates ------------------------------------------------------------
 
 # deal with the 'S_' variables that are in a different format:
-# I'm setting at these dates to the first of the month.
+# I'm setting these dates to the first of the month for now.
 S_vars <- dplyr::select(dates_unform, dplyr::starts_with("S_"))
-S_vars_format <- as.data.frame(sapply(S_vars, function(x) { paste0(x, "01") }))
+S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA, paste0(x, "01")) }))
 
 S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 
@@ -43,15 +43,22 @@ dates_all <- cbind(dates_form, S_vars_dates)
 dates_all$index_date <- mdy(dates_unform$index_date)
 
 # create date difference columns
-date_differences <- create_date_diffs(input = dates_all[2:ncol(dates_all)],
+date_differences_776000 <- create_date_diffs(input = dates_all[1:776000, 2:ncol(dates_all)],
                                       index_col = "index_date")
+write_rds(date_differences_776000, paste(output_dir, "date_diffs_1_1000_776000.rds"))
+date_differences_end <- create_date_diffs(input = dates_all[776001:nrow(dates_all), 2:ncol(dates_all)],
+                                             index_col = "index_date")
+write_rds(date_differences_end, paste(output_dir, "date_diffs_1_1000_end.rds"))
+all.equal(colnames(date_differences_776000), colnames(date_differences_end))
+
+date_diffs_all <- rbind(date_differences_776000, date_differences_end)
 
 # add necessary columns
 date_diffs_combined <- data.frame(dates_unform[,1:5],
                                   date_differences)
 
 # write out to csv
-write_rds(date_diffs_combined, paste0(output_dir, "01_train_combined_date_differences.rds"))
+write_rds(date_diffs_combined, paste0(output_dir, "02_1_to_1000_date_differences.rds"))
 
 # FUNCTIONS ---------------------------------------------------------------
 

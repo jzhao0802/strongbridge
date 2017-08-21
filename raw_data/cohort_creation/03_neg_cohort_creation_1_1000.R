@@ -95,14 +95,6 @@ write_rds(Neg_SP_dates, paste0(output_dir, "Neg_SP_dates.rds"))
 rm(Neg_SP, Neg_SP_flags, Neg_SP_frequencies, Neg_SP_dates, Neg_SP_claims)
 
 
-
-# Join at this stage and then deal with the rest:
-
-Flags_RX_DX <- join_all(list(Neg_PA, Neg_RX_flags, Neg_DX_flags), type = "left")
-Freq_RX_DX <- join_all(list(Neg_PA, Neg_RX_frequencies, Neg_DX_frequencies), type = "left")
-Count_RX_DX <- join_all(list(Neg_PA, Neg_RX_claims, Neg_DX_claims), type = "left")
-Dates_RX_DX <- join_all(list(Neg_PA, Neg_RX_dates, Neg_DX_dates), type = "left")
-
 # PR
 Neg_PR_flags <- select(Neg_PR, PATIENT_ID, ends_with("_FLAG"))
 Neg_PR_claims <- select(Neg_PR, PATIENT_ID, ends_with("_CLAIM_CNT"), -contains("AVG"))
