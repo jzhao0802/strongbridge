@@ -21,14 +21,15 @@ dates_unform <- read_rds(paste0(data_dir, "01_train_combined_dates_unformatted.r
 # deal with the 'S_' variables that are in a different format:
 # I'm setting at these dates to the first of the month.
 S_vars <- dplyr::select(dates_unform, dplyr::starts_with("S_"))
-S_vars_format <- as.data.frame(sapply(S_vars, function(x) { paste0(x, "01") }))
+# S_vars_format <- as.data.frame(sapply(S_vars, function(x) { paste0(x, "01") }))
+S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA, paste0(x, "01")) }))
 
 S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 
 # the dates are all on the first. We need to change variables with 'LAST' to the
 # last day of the month:
-last_cols <- grep("LAST", colnames(S_vars_dates))
-S_vars_dates[ ,last_cols] <- lapply(S_vars_dates[ , last_cols], function(x) { ceiling_date(x, unit = "month")- 1 })
+first_cols <- grep("FIRST", colnames(S_vars_dates))
+S_vars_dates[ ,first_cols] <- lapply(S_vars_dates[ , first_cols], function(x) { ceiling_date(x, unit = "month")- 1 })
 
 
 # convert 'D' G' and 'P' variables to correct format
@@ -43,7 +44,7 @@ dates_all <- cbind(dates_form, S_vars_dates)
 dates_all$index_date <- mdy(dates_unform$index_date)
 
 # create date difference columns
-date_differences <- create_date_diffs(input = dates_all[2:ncol(dates_all)],
+date_differences <- create_date_diffs(input = dates_all[,2:ncol(dates_all)],
                                       index_col = "index_date")
 
 # add necessary columns
@@ -51,7 +52,7 @@ date_diffs_combined <- data.frame(dates_unform[,1:5],
                                   date_differences)
 
 # write out to csv
-write_rds(date_diffs_combined, paste0(output_dir, "02_1_to_1000_combined_date_differences.rds"))
+write_rds(date_diffs_combined, paste0(output_dir, "01_train_combined_date_differences.rds"))
 
 # FUNCTIONS ---------------------------------------------------------------
 

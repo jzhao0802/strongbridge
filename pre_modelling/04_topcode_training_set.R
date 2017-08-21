@@ -76,7 +76,7 @@ topcode <- function(input, cap, label) {
     # work out which class has the higher cap:
     quant_pos <- stats::quantile(pos, cap, na.rm = TRUE)
     quant_neg <- stats::quantile(neg, cap, na.rm = TRUE)
-    quant <- max(quant_pos, quant_neg)
+    quant <- max(quant_pos, quant_neg, na.rm = TRUE)
     
     # set anything in the dataset above this value to this value
     x[x > quant] <- quant
@@ -104,7 +104,7 @@ topcode_frequencies <- function(input, cap, label) {
     # work out which class has the higher cap:
     quant_pos <- stats::quantile(pos[pos > 0], cap, na.rm = TRUE)
     quant_neg <- stats::quantile(neg[neg > 0], cap, na.rm = TRUE)
-    quant <- max(quant_pos, quant_neg)
+    quant <- max(quant_pos, quant_neg, na.rm = TRUE)
     
     # set anything in the dataset above this value to this value
     x[x > quant] <- quant
