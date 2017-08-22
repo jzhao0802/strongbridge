@@ -28,7 +28,7 @@ S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 # the dates are all on the first. We need to change variables with 'LAST' to the
 # last day of the month:
 last_cols <- grep("LAST", colnames(S_vars_dates))
-S_vars_dates[ ,last_cols] <- lapply(S_vars_dates[ , last_cols], function(x) { ceiling_date(x, unit = "month")- 1 })
+S_vars_dates[ ,last_cols] <- lapply(S_vars_dates[ , last_cols], function(x) { ceiling_date(x, unit = "month") - 1 })
 
 
 # convert 'D' G' and 'P' variables to correct format
@@ -49,13 +49,23 @@ write_rds(date_differences_776000, paste(output_dir, "date_diffs_1_1000_776000.r
 date_differences_end <- create_date_diffs(input = dates_all[776001:nrow(dates_all), 2:ncol(dates_all)],
                                              index_col = "index_date")
 write_rds(date_differences_end, paste(output_dir, "date_diffs_1_1000_end.rds"))
+
+
+# JOIN THE DATA TOGETER TO MAKE A SINGLE SET OF VARIABLES -----------------
+#
+date_differences_776000 <- read_rds(paste(output_dir, "date_diffs_1_1000_776000.rds"))
+date_differences_end <- read_rds(paste(output_dir, "date_diffs_1_1000_end.rds"))
+
 all.equal(colnames(date_differences_776000), colnames(date_differences_end))
 
 date_diffs_all <- rbind(date_differences_776000, date_differences_end)
 
+# add label column
+
 # add necessary columns
 date_diffs_combined <- data.frame(dates_unform[,1:5],
-                                  date_differences)
+                                  label = 0,
+                                  date_diffs_all)
 
 # write out to csv
 write_rds(date_diffs_combined, paste0(output_dir, "02_1_to_1000_date_differences.rds"))
