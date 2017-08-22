@@ -13,19 +13,18 @@ data_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # read in frequencies:
 freq_raw <- read_rds(paste0(data_dir, "02_Neg_frequencies_1_to_1000.rds"))
 
-# read in var config file:
-var_config_raw <- read_csv(paste0(data_dir, "sb_var_config.csv"))
-
-freq_config_index <- grep(paste(colnames(freq_raw), collapse = "|"), var_config$Column)
-
-var_config <- var_config[freq_config_index, ]
-setdiff(colnames(freq_raw), var_config$Column)
-# var config missing: "index_date"      "lookback_date"   "lookback_days"   "test_patient_id"
+# # read in var config file:
+# var_config_raw <- read_csv(paste0(data_dir, "sb_var_config.csv"))
+# freq_config_index <- grep(paste(colnames(freq_raw), collapse = "|"), var_config$Column)
+# var_config <- var_config[freq_config_index, ]
+# setdiff(colnames(freq_raw), var_config$Column)
+# # var config missing: "index_date"      "lookback_date"   "lookback_days"   "test_patient_id"
 
 # read in the extreme values thrsh file:
 ex_val_thrsh <- read_csv(paste0(data_dir, "ex_val_caps_freq.csv"))
 
-# convert all cols to numeric:
+# convert all cols to numeric (this is slightly more transparent than doing it
+# all in one line):
 freq_raw$P_L2275_AVG_CLAIM_CNT <- as.numeric(freq_raw$P_L2275_AVG_CLAIM_CNT)
 freq_raw$D_3591_AVG_CLAIM_CNT <- as.numeric(freq_raw$D_3591_AVG_CLAIM_CNT)
 freq_raw$D_3592_AVG_CLAIM_CNT <- as.numeric(freq_raw$D_3592_AVG_CLAIM_CNT)

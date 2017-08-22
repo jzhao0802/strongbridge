@@ -21,6 +21,10 @@ training_freq_topcoded <- topcode_frequencies(training_freq, 0.99, label = "labe
 # bind with common variables:
 training_freq_combined <- data.frame(training_freq_raw[,1:7],
                                 training_freq_topcoded)
+
+# convert gender to dummy:
+training_freq_combined$GENDER <- ifelse(training_freq_combined$GENDER == "F", 1, 0)
+
 # write out:
 write_rds(training_freq_combined, paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
 
@@ -30,7 +34,7 @@ train_diffs_raw <- read_rds(paste0(data_dir, "01_train_combined_date_differences
 
 # extract variables for topcoding and label:
 train_dates <- dplyr::select(train_diffs_raw, label, dplyr::contains("EXP"))
-train_dates_topcode <- topcode(input = train_dates, cap = 0.99, label = "label")
+train_dates_topcode <- topcode_date_diffs(input = train_dates, cap = 0.99, label = "label")
 # bind with common variables:
 train_dates_combined <- data.frame(train_diffs_raw[,1:5],
                                    train_dates_topcode)
@@ -38,20 +42,24 @@ train_dates_combined <- data.frame(train_diffs_raw[,1:5],
 # write out:
 write_rds(train_dates_combined, paste0(data_dir, "01_train_combined_date_differences_topcoded.rds"))
 
+
+# CREATING EX_VAL_THRSH FILES ---------------------------------------------
 # find maximums of each column in the topcoded dataset and save for future reference:
+
+data_dir <-"F:/Projects/Strongbridge/data/modelling/"
 
 train_dates_combined <- read_rds(paste0(data_dir, "01_train_combined_date_differences_topcoded.rds"))
 
-train_freq_combined <- read_rds(paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
+training_freq_combined <- read_rds(paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
 
 train_dates_max <- sapply(train_dates_combined[,6:ncol(train_dates_combined)], function(x) {max(x, na.rm = TRUE)})
 
-train_freq_max <- sapply(train_freq_combined[,8:ncol(train_freq_combined)], function(x) { max(x, na.rm = TRUE)})
+training_freq_max <- sapply(training_freq_combined[,8:ncol(training_freq_combined)], function(x) { max(x, na.rm = TRUE)})
 
 # create extreme vals config files for each dataset 
 
 ex_freq_config <- data.frame(Variable = names(train_freq_max), 
-                            Thrsh = train_freq_max)
+                            Thrsh = training_freq_max)
 
 ex_date_config <- data.frame(Variable = names(train_dates_max), 
                              Thrsh = train_dates_max)
@@ -62,7 +70,7 @@ write_csv(ex_date_config, paste0(data_dir, "ex_val_caps_dates.csv"))
 
 # TOP CODING FUNCTION -----------------------------------------------------
 
-topcode <- function(input, cap, label) {
+topcode_date_diffs <- function(input, cap, label) {
   # extract index of positives and negatives:
   pos_index <- which(input[[label]] == 1)
   neg_index <- which(input[[label]] == 0)

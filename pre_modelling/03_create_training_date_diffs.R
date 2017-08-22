@@ -26,11 +26,20 @@ S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA,
 
 S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 
-# the dates are all on the first. We need to change variables with 'LAST' to the
-# last day of the month:
-first_cols <- grep("FIRST", colnames(S_vars_dates))
-S_vars_dates[ ,first_cols] <- lapply(S_vars_dates[ , first_cols], function(x) { ceiling_date(x, unit = "month")- 1 })
+# add in label column:
+S_vars_dates$label <- dates_unform$label
 
+
+# for positives, FIRST_EXP set to last day of month
+first_cols <- grep("FIRST", colnames(S_vars_dates))
+S_vars_dates[S_vars_dates$label == 1,first_cols] <- lapply(S_vars_dates[S_vars_dates$label == 1, first_cols], function(x)
+  { ceiling_date(x, unit = "month")- 1 })
+# for negatives, LAST_EXP set to last day of month
+last_cols <- grep("LAST", colnames(S_vars_dates))
+S_vars_dates[S_vars_dates$label == 0,last_cols] <- lapply(S_vars_dates[S_vars_dates$label == 0, last_cols], function(x)
+{ ceiling_date(x, unit = "month")- 1 })
+
+S_vars_dates$label <- NULL
 
 # convert 'D' G' and 'P' variables to correct format
 dates_form <-  date_format(input_data = dates_unform,
