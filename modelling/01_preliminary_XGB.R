@@ -6,18 +6,21 @@
 library(tidyverse)
 library(mlr)
 library(xgboost)
-
+library(palabmod)
 
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-
+results_dir <- "F:/Projects/Strongbridge/results/modelling/preliminary/"
 
 # Data in -----------------------------------------------------------------
 
 train_raw <- read_rds(paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
 test_neg_raw <- read_rds(paste0(data_dir, "02_Neg_frequencies_1_to_1000_topcoded.rds")) 
 
+# need to exclude duplicate patient IDs from test_neg_raw:
+dupes <- which(test_neg_raw$PATIENT_ID %in% train_raw$PATIENT_ID)
+test_neg_no_dupes <- test_neg_raw[-dupes,]
 
 # Preprocess --------------------------------------------------------------
 
@@ -27,7 +30,7 @@ exclude_test <- c("-index_date", "-lookback_date",
              "-lookback_days")
 
 train_model <- train_raw %>% select_(.dots = exclude_train)
-test_model <- test_neg_raw %>% select_(.dots = exclude_test)
+test_model <- test_neg_no_dupes %>% select_(.dots = exclude_test)
 
 train_model$subset <- ifelse(train_model$label == 1, "pos", "train_neg")
 test_model$subset <- "test_neg"
@@ -64,33 +67,98 @@ lrn_xgb$par.vals <- list(
   objective = "binary:logistic"
 )
 
-# create resampling instance:
 
-rdesc <- makeResampleDesc(method = "CV", iters = 3)
-
-rin <- makeResampleInstance(desc = rdesc,
-                            task = dataset)
+# Create the indices for training and testing in resampling ---------------
 
 # feed the correct row numbers to rin to give a 1:50 train ratio and
 # 1:1000 test ratio:
 
 # get dataframe of patient_ids and subset:
 patients <- select(combined_data, PATIENT_ID, test_patient_id, subset)
+
 # 1: extract three cohorts:
 pos_patients <- filter(patients, subset == "pos")
 neg_train <- filter(patients, subset == "train_neg")
 neg_test <- filter(patients, subset == "test_neg")
 
 # 2: split positives into K groups (one for each CV fold):
-pos_groups <- split()
+K <- 5
+set.seed(123)
+
+pos_randomise <- sample(nrow(pos_patients), nrow(pos_patients), replace = FALSE)
+
+# create a set of K bins:
+# remainder <- nrow(pos_patients) - nrow(pos_patients) %% K
+bins <- rep(1:K, nrow(pos_patients)/K)
+pos_groups <- split(pos_patients[pos_randomise,], bins)
+
+# create a series of training and testing indices:
+train_neg <- list()
+test_neg <- list()
+train_combined <- list()
+test_combined <- list()
+train_indices <- list()
+test_indices <- list()
+
+for(i in 1:length(pos_groups)) {
+  # train on patients NOT in the set i:
+  train_neg[[i]] <- neg_train$PATIENT_ID[!(neg_train$test_patient_id %in% pos_groups[[i]]$PATIENT_ID)]
+  # test on everything in the set i:
+  test_neg[[i]] <- neg_test$PATIENT_ID[neg_test$test_patient_id %in% pos_groups[[i]]$PATIENT_ID]
+  
+  # extract positive patients NOT in set i for training:
+  train_pos <- do.call("rbind", pos_groups[-i])
+  
+  # combine positives and negatives:
+  train_combined[[i]] <- c(train_pos$PATIENT_ID, train_neg[[i]])
+  test_combined[[i]] <- c(pos_groups[[i]]$PATIENT_ID, test_neg[[i]])
+  
+  # extract indices in original dataset for traininig and testing:
+  train_indices[[i]] <- which(combined_data$PATIENT_ID %in% train_combined[[i]])
+  test_indices[[i]] <- which(combined_data$PATIENT_ID %in% test_combined[[i]])
+}
+
+# checks
+length(train_indices[[1]]) + length(train_indices[[2]]) + length(train_indices[[3]]) + length(train_indices[[4]]) + length(train_indices[[5]]) == nrow(train_model) * 4
+
+length(test_indices[[1]]) + length(test_indices[[2]]) + length(test_indices[[3]]) + length(test_indices[[4]]) + length(test_indices[[5]]) - nrow(pos_patients) == nrow(test_model)
+
+
+
+# RESAMPLE ----------------------------------------------------------------
+
+rdesc <- makeResampleDesc(method = "CV", iters = 5)
+
+rin <- makeResampleInstance(desc = rdesc,
+                            task = dataset)
+
+# add custom indices
+rin$train.inds <- train_indices
+rin$test.inds <- test_indices
+
+# cross validate
+res <- resample(learner = lrn_xgb, 
+                task = dataset,
+                resampling = rin)
+
+# train model
+xgb_model <- train(learner = lrn_xgb,
+                   task = dataset)
+
+# generate pr curve:
+pr_curve <- perf_binned_perf_curve(pred = res$pred)
+
+# variable importance:
+importance <- xgb.importance(feature_names = xgb_model$features,
+                             model = xgb_model)
+
+# write out:
+write_csv(pr_curve$curve, paste0(results_dir, "01_PR_XGBoost_5_fold_freq.csv"))
 
 
 
 
 
-rin$train.inds[[1]]
-
-
-
+pr_curve_pred <- perf_binned_perf_curve(pred = pred)
 
 
