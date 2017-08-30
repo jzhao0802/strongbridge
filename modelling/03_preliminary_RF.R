@@ -1,6 +1,6 @@
 
 #  ------------------------------------------------------------------------
-# PRELIMINARY MODELLING - XGBOOST FREQUENCIES ONLY
+# PRELIMINARY MODELLING - RANDOM FOREST FREQUENCIES ONLY
 #  ------------------------------------------------------------------------
 
 library(tidyverse)
@@ -12,7 +12,7 @@ library(PRROC)
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
+results_dir <- "F:/Projects/Strongbridge/results/modelling/RF_preliminary/"
 
 # Data in -----------------------------------------------------------------
 
@@ -31,7 +31,7 @@ test_neg_no_dupes <- test_neg_raw[-dupes,]
 # exclude columns not included in modelling, leaving patient IDs in for now:
 exclude_train <- c("-index_date", "-lookback_date")
 exclude_test <- c("-index_date", "-lookback_date",
-             "-lookback_days")
+                  "-lookback_days")
 
 # remove duplicates
 train_model <- train_raw %>% select_(.dots = exclude_train)
@@ -69,13 +69,10 @@ dataset <- makeClassifTask(id = "Prelim_strongbridge",
                            positive = 1)
 
 # make learner
-lrn_xgb <- makeLearner("classif.xgboost", predict.type = "prob")
-lrn_xgb$par.vals <- list(
-  nrounds = 100,
-  verbose = TRUE,
-  objective = "binary:logistic"
-)
+lrn_rf <- makeLearner("classif.ranger", predict.type = "prob")
 
+# set hyperparameters
+lrn_rf <- setHyperPars(lrn_rf, importance = "impurity")
 
 # CREATE RESAMPLING INDICES -----------------------------------------------
 
@@ -152,72 +149,15 @@ rin$train.inds <- train_indices
 rin$test.inds <- test_indices
 
 # cross validate
-res <- resample(learner = lrn_xgb, 
+res <- resample(learner = lrn_rf, 
                 task = dataset,
                 resampling = rin,
                 measures = pr10,
                 models = TRUE)
 
-
-# SINGLE MODEL ------------------------------------------------------------
-
-train_model$label <- as.factor(train_model$label)
-training_dataset <- makeClassifTask(id = "training model on all 1:50 training data",
-                                    data = select(train_model, -PATIENT_ID, -test_patient_id, -subset),
-                                    target = "label",
-                                    positive = 1)
-xgb_model <- train(learner = lrn_xgb,
-                   task = training_dataset)
-
-
-#  ------------------------------------------------------------------------
-# MODELLING ANALYSIS
-#  ------------------------------------------------------------------------
-
-# PR CURVE ----------------------------------------------------------------
-
-# generate pr curve from the resample:
-pr_curve <- perf_binned_perf_curve(pred = res$pred)
+# ANALYSIS ----------------------------------------------------------------
+pr_curve <- perf_binned_perf_curve(res$pred)
 
 # write out:
-write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_5_fold_freq.csv"))
-
-# ROCR pr curve:
-perf_vs_thresh <- generateThreshVsPerfData(res$pred, measures = list(tpr, ppv))
-plotROCCurves(perf_vs_thresh)
-
-write_csv(perf_vs_thresh$data, paste0(results_dir, "ROCR_PRCurve_XGB_5_fold_freq.csv"))
-
-# MEASURES ----------------------------------------------------------------
-
-write_csv(res$measures.test, paste0(results_dir, "PR10_XGB_freq_5foldCV.csv"))
-
-# VARIABLE IMPORTANCE -----------------------------------------------------
-
-importance_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/variable_importance/"
-
-# variable importance for the single model ----------------------------------
-importance_model <- xgb.importance(feature_names = xgb_model$features,
-                             model = xgb_model$learner.model)
-# convert to numeric in order to use in detailed xgb.importance:
-train_numeric <- as.data.frame(sapply(training_dataset$env$data, function(x) { as.numeric(as.character(x)) }))
-
-detailed_imp <- xgb.importance(feature_names = xgb_model$features,
-                               model = xgb_model$learner.model, data = as.matrix(train_numeric),
-                               label = train_numeric$label)
-
-# write out:
-write_csv(importance_model, paste(importance_dir, "VI_XGB_freq_singlemodel.csv"))
-write_csv(detailed_imp, paste(importance_dir, "Detailed_VI_XGB_freq_singlemodel.csv"))
-
-# generate variable importance for each fold of the CV:
-for(i in 1:length(res$models)) {
-  importance_fold <- xgb.importance(feature_names = res$models[[i]]$features,
-                                    model = res$models[[i]]$learner.model)
-  write_csv(importance_fold, paste0(importance_dir, "VI_XGB_freq_fold_", i, ".csv"))
-}
-
-
-#  ------------------------------------------------------------------------
-
+write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_RF_5_fold_freq.csv"))
 
