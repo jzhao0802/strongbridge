@@ -6,7 +6,6 @@
 library(tidyverse)
 library(mlr)
 library(palabmod)
-library(PRROC)
 
 # globals -----------------------------------------------------------------
 
@@ -166,5 +165,9 @@ pr_curve <- perf_binned_perf_curve(res$pred)
 # write out:
 write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_LR_5_fold_freq.csv"))
 
+# extract coefficients and p values:
+LR_summary <- summary(xgb_model$learner.model)
 
+LR_coeffs <- as.data.frame(LR_summary$coefficients)
 
+write.csv(LR_coeffs, paste0(results_dir, "LR_Coefficients_XGBoost.csv"), )

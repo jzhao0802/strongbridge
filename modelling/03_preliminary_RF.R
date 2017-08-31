@@ -161,3 +161,10 @@ pr_curve <- perf_binned_perf_curve(res$pred)
 # write out:
 write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_RF_5_fold_freq.csv"))
 
+# write out models:
+for( i in 1:length(res$models)) {
+  write_rds(res$models[[i]], paste0(results_dir, "RF_model_fold", i, ".rds"))
+}
+
+
+
