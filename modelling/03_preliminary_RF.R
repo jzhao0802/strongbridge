@@ -7,7 +7,8 @@ library(tidyverse)
 library(mlr)
 library(xgboost)
 library(palabmod)
-library(PRROC)
+library(ranger)
+
 
 # globals -----------------------------------------------------------------
 
@@ -155,6 +156,17 @@ res <- resample(learner = lrn_rf,
                 measures = pr10,
                 models = TRUE)
 
+# Train single model:
+train_model$label <- as.factor(train_model$label)
+training_dataset <- makeClassifTask(id = "training model on all 1:50 training data",
+                                    data = select(train_model, -PATIENT_ID, -test_patient_id, -subset),
+                                    target = "label",
+                                    positive = 1)
+
+rf_model <- train(learner = lrn_rf,
+                   task = training_dataset)
+
+
 # ANALYSIS ----------------------------------------------------------------
 pr_curve <- perf_binned_perf_curve(res$pred)
 
@@ -166,5 +178,11 @@ for( i in 1:length(res$models)) {
   write_rds(res$models[[i]], paste0(results_dir, "RF_model_fold", i, ".rds"))
 }
 
+# variable importance:
+VI_RF <- data.frame(feature = names(ranger::importance(rf_model$learner.model)),
+                    importance = ranger::importance(rf_model$learner.model))
 
+write_csv(VI_RF, paste0(results_dir, "RF_VI_freq.csv"))
+
+write_rds(rf_model, paste0(results_dir, "RF_single_model.rds"))
 
