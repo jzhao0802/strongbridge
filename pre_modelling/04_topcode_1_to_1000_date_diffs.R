@@ -39,5 +39,10 @@ for( i in 7:ncol(dd_capped)){
   
 }
 
+# round date differences to nearest whole number:
+dd_capped <- read_rds(paste0(data_dir, "02_Neg_date_differences_1_to_1000_topcoded.rds"))
+
+dd_capped[,7:ncol(dd_capped)] <- round(dd_capped[,7:ncol(dd_capped)])
+
 # write out
 write_rds(dd_capped, paste0(data_dir, "02_Neg_date_differences_1_to_1000_topcoded.rds"))

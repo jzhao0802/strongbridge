@@ -6,6 +6,7 @@
 library(lubridate)
 library(tidyverse)
 library(stringr)
+library(zoo)
 
 # Globals -----------------------------------------------------------------
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
@@ -19,53 +20,60 @@ dates_unform <- read_rds(paste0(data_dir, "02_Neg_dates_1_to_1000.rds"))
 # Format dates ------------------------------------------------------------
 
 # deal with the 'S_' variables that are in a different format:
-# I'm setting these dates to the first of the month for now.
 S_vars <- dplyr::select(dates_unform, dplyr::starts_with("S_"))
+
 S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA, paste0(x, "01")) }))
 
 S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 
-# the dates are all on the first. We need to change variables with 'LAST' to the
-# last day of the month:
-last_cols <- grep("LAST", colnames(S_vars_dates))
-S_vars_dates[ ,last_cols] <- lapply(S_vars_dates[ , last_cols], function(x) { ceiling_date(x, unit = "month") - 1 })
+# add index date column;
+S_vars_dates$index_date <- mdy(dates_unform$index_date)
 
+# convert to yearmonths:
+S_vars_yearmon <- as.data.frame(sapply(S_vars_dates, as.yearmon))
+
+# create date differences for these variables:
+
+S_date_diffs <- as.data.frame(sapply(select(S_vars_yearmon, -index_date),
+                                     function(x) {(S_vars_yearmon$index_date - x)*12}))
+write_rds(S_date_diffs, paste0(output_dir, "S_1_1000_date_differences.rds"))
 
 # convert 'D' G' and 'P' variables to correct format
 dates_form <-  date_format(input_data = dates_unform,
                            date_pattern = "_EXP_DT",
                            PATIENT_ID_col = "PATIENT_ID")
 
-# bind the two together
-dates_all <- cbind(dates_form, S_vars_dates)
 
 # add index date column for creation of date diffs
-dates_all$index_date <- mdy(dates_unform$index_date)
+dates_form$index_date <- mdy(dates_unform$index_date)
 
 # create date difference columns
-date_differences_776000 <- create_date_diffs(input = dates_all[1:776000, 2:ncol(dates_all)],
+date_differences_776000 <- create_date_diffs(input = dates_form[1:776000, 2:ncol(dates_form)],
                                       index_col = "index_date")
 write_rds(date_differences_776000, paste(output_dir, "date_diffs_1_1000_776000.rds"))
-date_differences_end <- create_date_diffs(input = dates_all[776001:nrow(dates_all), 2:ncol(dates_all)],
+gc()
+date_differences_end <- create_date_diffs(input = dates_form[776001:nrow(dates_form), 2:ncol(dates_form)],
                                              index_col = "index_date")
 write_rds(date_differences_end, paste(output_dir, "date_diffs_1_1000_end.rds"))
-
+gc()
 
 # JOIN THE DATA TOGETER TO MAKE A SINGLE SET OF VARIABLES -----------------
 #
 date_differences_776000 <- read_rds(paste(output_dir, "date_diffs_1_1000_776000.rds"))
 date_differences_end <- read_rds(paste(output_dir, "date_diffs_1_1000_end.rds"))
+S_date_diffs <- read_rds(paste0(output_dir, "S_1_1000_date_differences.rds"))
 
 all.equal(colnames(date_differences_776000), colnames(date_differences_end))
 
-date_diffs_all <- rbind(date_differences_776000, date_differences_end)
+date_diffs <- rbind(date_differences_776000, date_differences_end)
 
-# add label column
+
 
 # add necessary columns
 date_diffs_combined <- data.frame(dates_unform[,1:5],
                                   label = 0,
-                                  date_diffs_all)
+                                  date_diffs,
+                                  S_date_diffs)
 
 # write out to csv
 write_rds(date_diffs_combined, paste0(output_dir, "02_1_to_1000_date_differences.rds"))

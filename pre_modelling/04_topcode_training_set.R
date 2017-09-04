@@ -39,6 +39,11 @@ train_dates_topcode <- topcode_date_diffs(input = train_dates, cap = 0.99, label
 train_dates_combined <- data.frame(train_diffs_raw[,1:5],
                                    train_dates_topcode)
 
+# round topcoded date diffs to whole numbers:
+train_dates_combined <- read_rds(paste0(data_dir, "01_train_combined_date_differences_topcoded.rds"))
+
+train_dates_combined[,6:ncol(train_dates_combined)] <- round(train_dates_combined[,6:ncol(train_dates_combined)])
+
 # write out:
 write_rds(train_dates_combined, paste0(data_dir, "01_train_combined_date_differences_topcoded.rds"))
 
