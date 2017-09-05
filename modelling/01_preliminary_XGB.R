@@ -11,44 +11,7 @@ library(PRROC)
 
 # globals -----------------------------------------------------------------
 
-data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
-
-# Data in -----------------------------------------------------------------
-
-train_raw <- read_rds(paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
-test_neg_raw <- read_rds(paste0(data_dir, "02_Neg_frequencies_1_to_1000_topcoded.rds")) 
-
-# need to exclude duplicate patient IDs from test_neg_raw:
-dupes <- which(test_neg_raw$PATIENT_ID %in% train_raw$PATIENT_ID)
-test_neg_no_dupes <- test_neg_raw[-dupes,]
-
-
-#  ------------------------------------------------------------------------
-# PREPROCESS
-#  ------------------------------------------------------------------------
-
-# exclude columns not included in modelling, leaving patient IDs in for now:
-exclude_train <- c("-index_date", "-lookback_date")
-exclude_test <- c("-index_date", "-lookback_date",
-             "-lookback_days")
-
-# remove duplicates
-train_model <- train_raw %>% select_(.dots = exclude_train)
-test_model <- test_neg_no_dupes %>% select_(.dots = exclude_test)
-
-# add subset column for indexing the cross validation
-train_model$subset <- ifelse(train_model$label == 1, "pos", "train_neg")
-test_model$subset <- "test_neg"
-
-# order columns so they are the same:
-test_model <- test_model[order(match(colnames(test_model), colnames(train_model)))]
-
-# check column names are in the same order:
-all.equal(colnames(train_model), colnames(test_model))
-
-# combine data
-combined_data <- bind_rows(train_model, test_model)
+all.
 
 # change label to a factor:
 combined_data$label <- as.factor(combined_data$label)
