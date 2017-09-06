@@ -104,8 +104,6 @@ rm(Neg_PR)
 
 
 
-
-
 # Feature select and join -----------------------------------------
 
 raw_dir <- "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/1_to_1000_dataset/"
@@ -122,7 +120,6 @@ DX_date <- read_rds(paste0(raw_dir, "Neg_DX_dates.rds"))
 RX_date <- read_rds(paste0(raw_dir, "Neg_RX_dates.rds"))
 PR_date <- read_rds(paste0(raw_dir, "Neg_PR_dates.rds"))
 SP_date <- read_rds(paste0(raw_dir, "Neg_SP_dates.rds"))
-
 
 
 DX_date_mod <- DX_date[ ,grep(paste(features$Variable_Stem, collapse = "|"), colnames(DX_date))]

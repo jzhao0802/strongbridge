@@ -49,11 +49,11 @@ dates_form$index_date <- mdy(dates_unform$index_date)
 
 # create date difference columns
 date_differences_776000 <- create_date_diffs(input = dates_form[1:776000, 2:ncol(dates_form)],
-                                      index_col = "index_date")
+                                             index_col = "index_date")
 write_rds(date_differences_776000, paste(output_dir, "date_diffs_1_1000_776000.rds"))
 gc()
 date_differences_end <- create_date_diffs(input = dates_form[776001:nrow(dates_form), 2:ncol(dates_form)],
-                                             index_col = "index_date")
+                                          index_col = "index_date")
 write_rds(date_differences_end, paste(output_dir, "date_diffs_1_1000_end.rds"))
 gc()
 
