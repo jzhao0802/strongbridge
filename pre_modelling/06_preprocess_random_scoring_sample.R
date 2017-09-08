@@ -7,7 +7,7 @@ library(tidyverse)
 library(mlr)
 library(xgboost)
 
-data_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/20170905/"
+data_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/"
 training_dir <- "F:/Projects/Strongbridge/data/modelling/"
 results_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # DATA IN -----------------------------------------------------------------
@@ -62,6 +62,12 @@ for( i in 6:ncol(raw_capped)){
 
 # write out:
 write_rds(raw_capped, paste0(results_dir, "04_random_scoring_freq_topcoded.rds"))
+
+
+ggplot(train_data[train_data$S_S37_AVG_CLAIM > 0,], aes(x=S_S37_AVG_CLAIM, ..density.., fill=as.factor(label))) + 
+  geom_density(alpha=.3)
+
+
 
 
 

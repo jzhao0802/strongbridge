@@ -12,7 +12,8 @@ library(palabmod)
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
+results_dir <-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/No_specialities/"
+
 
 # Data in -----------------------------------------------------------------
 
@@ -65,10 +66,15 @@ combined_data$label <- as.factor(combined_data$label)
 
 write_rds(combined_data, paste0(data_dir, "preliminary_model_data/", "01_prelim_matched_combined_train_test.rds"))
 
+combined_data <- read_rds(paste0(data_dir, "preliminary_model_data/", "01_prelim_matched_combined_train_test.rds"))
+
 # remove subset and patient IDs to define modelling data:
 combined_model <- select(combined_data, -subset, -PATIENT_ID, -test_patient_id)
 
-
+#### REMOVE SPECIALITY VARIABLES:
+combined_model <- combined_model %>% select(-starts_with("S"))
+train_model <- train_model %>% select(-starts_with("S"))
+################################
 
 #  ------------------------------------------------------------------------
 # MODELLING
@@ -179,7 +185,7 @@ all.equal(test_data$label, test_pred$truth)
 # add patient id:
 test_pred$PATIENT_ID <- test_data$PATIENT_ID
 # write out:
-write_csv(test_pred, paste0(results_dir, "predictions/", "XGB_prelim_test_predictions_1_1000.csv"))
+write_rds(test_pred, paste0(results_dir, "XGB_prelim_test_predictions_1_1000.rds"))
 
 # SINGLE MODEL ------------------------------------------------------------
 
