@@ -7,7 +7,7 @@ library(tidyverse)
 library(mlr)
 library(xgboost)
 
-data_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/"
+data_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/20170905/"
 training_dir <- "F:/Projects/Strongbridge/data/modelling/"
 results_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # DATA IN -----------------------------------------------------------------

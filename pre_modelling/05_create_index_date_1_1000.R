@@ -7,6 +7,7 @@
 library(tidyverse)
 library(plyr)
 library(lubridate)
+library(zoo)
 
 raw_dir <- "F:/Projects/Strongbridge/data/Cohorts/01_Cohorts_by_variable_type/1_to_1000_dataset/"
 output_dir <- "F:/Projects/Strongbridge/data/modelling/"
@@ -80,17 +81,21 @@ All_max_df <- data.frame(PATIENT_ID = PA_ID$PATIENT_ID, old_index_date = (PA$ind
 All_max_df$old_index_date <- mdy(All_max_df$old_index_date)
 All_max_df$new_index_date <- ymd(All_max_df$new_index_date)
 
-# see if this works. Trying to impute missing values for the new index date with
-# the old index date. Check it gives us dates not numbers. Success.
+# Impute missing values for the new index date with
+# the old index date.
 missing_indexes <- which(is.na(All_max_df$new_index_date))
 All_max_df$new_index_date[missing_indexes] <- All_max_df$old_index_date[missing_indexes]
 
+# If new index date is not in same year and month as old index date, then use old index date.
+different_yearmon <- which(!(as.yearmon(All_max_df$new_index_date) == as.yearmon(All_max_df$old_index_date)))
+All_max_df$new_index_date[different_yearmon] <- All_max_df$old_index_date[different_yearmon]
+
 All_max_df$difference <- as.numeric(All_max_df$old_index_date - All_max_df$new_index_date)
+
 
 write_rds(All_max_df, paste0(output_dir, "New_index_date_1_1000.rds"))
 
-# look at distribution of index date differences above 1 month:
-summary(All_max_df$difference[All_max_df$difference > 31])
+
 
 # FUNCTIONS ---------------------------------------------------------------
 

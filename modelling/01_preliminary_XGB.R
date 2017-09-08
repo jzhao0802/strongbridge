@@ -191,7 +191,8 @@ training_dataset <- makeClassifTask(id = "training model on all 1:50 training da
 xgb_model <- train(learner = lrn_xgb,
                    task = training_dataset)
 
-
+# write out model:
+write_rds(xgb_model, paste0(results_dir, "XGB_preliminary_model.rds"))
 
 #  ------------------------------------------------------------------------
 # MODELLING ANALYSIS
