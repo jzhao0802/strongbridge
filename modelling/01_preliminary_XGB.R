@@ -7,13 +7,12 @@ library(tidyverse)
 library(mlr)
 library(xgboost)
 library(palabmod)
-library(PRROC)
+# library(PRROC)
 
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <-
-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
+results_dir <-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
 
 # Data in -----------------------------------------------------------------
 
@@ -64,8 +63,11 @@ combined_data <- bind_rows(train_model, test_model)
 # change label to a factor:
 combined_data$label <- as.factor(combined_data$label)
 
+write_rds(combined_data, paste0(data_dir, "preliminary_model_data/", "01_prelim_matched_combined_train_test.rds"))
+
 # remove subset and patient IDs to define modelling data:
 combined_model <- select(combined_data, -subset, -PATIENT_ID, -test_patient_id)
+
 
 
 #  ------------------------------------------------------------------------
@@ -151,7 +153,7 @@ length(test_indices[[1]]) + length(test_indices[[2]]) + length(test_indices[[3]]
 train_indices <- read_rds(paste0(data_dir, "train_indices.rds"))
 test_indices <- read_rds(paste0(data_dir, "test_indices.rds"))
 
-rdesc <- makeResampleDesc(method = "CV", iters = 5, predict = "both")
+rdesc <- makeResampleDesc(method = "CV", iters = 5, predict = "test")
 
 rin <- makeResampleInstance(desc = rdesc,
                             task = dataset)
@@ -169,6 +171,15 @@ res <- resample(learner = lrn_xgb,
                 measures = pr10,
                 models = TRUE)
 
+# extract test predictions and add on patient id column:
+test_pred <- res$pred$data[res$pred$data$set == "test",]
+id <- test_pred$id
+test_data <- combined_data[id,]
+all.equal(test_data$label, test_pred$truth)
+# add patient id:
+test_pred$PATIENT_ID <- test_data$PATIENT_ID
+# write out:
+write_csv(test_pred, paste0(results_dir, "predictions/", "XGB_prelim_test_predictions_1_1000.csv"))
 
 # SINGLE MODEL ------------------------------------------------------------
 
@@ -179,6 +190,7 @@ training_dataset <- makeClassifTask(id = "training model on all 1:50 training da
                                     positive = 1)
 xgb_model <- train(learner = lrn_xgb,
                    task = training_dataset)
+
 
 
 #  ------------------------------------------------------------------------
