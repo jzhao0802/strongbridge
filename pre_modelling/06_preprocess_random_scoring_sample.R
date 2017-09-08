@@ -9,6 +9,7 @@ library(xgboost)
 
 data_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/"
 training_dir <- "F:/Projects/Strongbridge/data/modelling/"
+results_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # DATA IN -----------------------------------------------------------------
 
 # sample
@@ -41,23 +42,26 @@ all.equal(colnames(raw_selection), colnames(train_data[c(1,4:ncol(train_data))])
 raw_selection$GENDER <- ifelse(raw_selection$GENDER == "F", 1, 0)
 
 # Impute NAs with 0s:
-raw_selection[is.na(raw_selection)]  <- 
+raw_selection[is.na(raw_selection)]  <- 0
 
 # TOPCODE -----------------------------------------------------------------
 
 ex_val_thrsh <- read_csv(paste0(training_dir, "ex_val_caps_freq.csv"))
 
-for( i in 6:ncol(freq_capped)){
+raw_capped <- raw_selection
+
+for( i in 6:ncol(raw_capped)){
   
   # Find variable in thrsh file:
-  Thrsh_index <- grep(colnames(freq_capped)[i], ex_val_thrsh$Variable)
+  Thrsh_index <- grep(colnames(raw_capped)[i], ex_val_thrsh$Variable)
   # Threshold corresponding to variable:
   Thrsh <- ex_val_thrsh$Thrsh[Thrsh_index]
-  freq_capped[,i][freq_capped[,i] > Thrsh] <- Thrsh
+  raw_capped[,i][raw_capped[,i] > Thrsh] <- Thrsh
   
 }
 
-
+# write out:
+write_rds(raw_capped, paste0(results_dir, "04_random_scoring_freq_topcoded.rds"))
 
 
 

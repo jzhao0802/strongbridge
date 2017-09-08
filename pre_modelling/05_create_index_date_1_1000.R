@@ -44,9 +44,9 @@ colnames(SP_affix)[1] <- "PATIENT_ID"
 SP_format <- date_format_S(input_data = SP_affix, date_pattern = "EXP",
                          PATIENT_ID_col = "PATIENT_ID")
 
+rm(DX_date, RX_date, PR_date, SP_date)
+gc()
 
-
-  
 # Find max date per row:
 
 DX_max <- apply(DX_format[,-1], 1, function(x) {max(x, na.rm = TRUE)})
@@ -63,6 +63,9 @@ PR_df <- data.frame(PATIENT_ID = PR_format$PATIENT_ID,
 SP_df <- data.frame(PATIENT_ID = SP_format$PATIENT_ID,
                     SP_max = SP_max)
 
+rm(DX_format, RX_format, PR_format, SP_format)
+gc()
+
 # Join to PATIENT_ID from PA file:
 PA_ID <- data.frame(PATIENT_ID = PA$PATIENT_ID)
 All_date <- join_all(list(PA_ID, DX_df, RX_df, PR_df, SP_df), by = "PATIENT_ID", type = "left")
@@ -74,10 +77,20 @@ All_date_max <- apply(All_date_form[,-1], 1, function(x) {max(x, na.rm = TRUE)})
 All_max_df <- data.frame(PATIENT_ID = PA_ID$PATIENT_ID, old_index_date = (PA$index_date), 
                          new_index_date = (All_date_max))
 
+All_max_df$old_index_date <- mdy(All_max_df$old_index_date)
+All_max_df$new_index_date <- ymd(All_max_df$new_index_date)
+
 # see if this works. Trying to impute missing values for the new index date with
-# the old index date. Check it gives us dates not numbers.
+# the old index date. Check it gives us dates not numbers. Success.
 missing_indexes <- which(is.na(All_max_df$new_index_date))
-All_max_df$new_index_date[missing] <- All_max_df$old_index_date[missing]
+All_max_df$new_index_date[missing_indexes] <- All_max_df$old_index_date[missing_indexes]
+
+All_max_df$difference <- as.numeric(All_max_df$old_index_date - All_max_df$new_index_date)
+
+write_rds(All_max_df, paste0(output_dir, "New_index_date_1_1000.rds"))
+
+# look at distribution of index date differences above 1 month:
+summary(All_max_df$difference[All_max_df$difference > 31])
 
 # FUNCTIONS ---------------------------------------------------------------
 
