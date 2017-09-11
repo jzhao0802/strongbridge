@@ -19,6 +19,10 @@ raw_data <- read_csv(paste0(data_dir, "Scoring_Final_Sample_C000.csv"))
 train_data <- read_rds(paste0(training_dir, "01_train_combined_common_freq_topcoded.rds"))
 # training data including date diffs:
 train_combined <- read_rds(paste0(training_dir, "03_train_freq_datediffs_topcoded.rds"))
+
+# model ############ NO SPECIALITIES: #################
+xgb_model <- read_rds("F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/No_specialities/XGB_preliminary_model.rds")
+
 # rename age and gender to AGE and GENDER:
 colnames(raw_data)[c(2,3,4,5)] <- c("lookback_date", "index_date", "AGE", "GENDER")
 
