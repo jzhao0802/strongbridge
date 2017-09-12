@@ -156,7 +156,7 @@ training_dataset <- makeClassifTask(id = "training model on all 1:50 training da
                                     data = select(train_model, -PATIENT_ID, -test_patient_id, -subset),
                                     target = "label",
                                     positive = 1)
-xgb_model <- train(learner = lrn_lr,
+lr_model <- train(learner = lrn_lr,
                    task = training_dataset)
 
 # ANALYSIS ----------------------------------------------------------------
@@ -166,8 +166,8 @@ pr_curve <- perf_binned_perf_curve(res$pred)
 write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_LR_5_fold_freq.csv"))
 
 # extract coefficients and p values:
-LR_summary <- summary(xgb_model$learner.model)
+LR_summary <- summary(lr_model$learner.model)
 
 LR_coeffs <- as.data.frame(LR_summary$coefficients)
 
-write.csv(LR_coeffs, paste0(results_dir, "LR_Coefficients_XGBoost.csv"), )
+write.csv(LR_coeffs, paste0(results_dir, "LR_Coefficients.csv"))
