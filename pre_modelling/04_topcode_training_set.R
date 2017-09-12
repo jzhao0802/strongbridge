@@ -63,7 +63,7 @@ training_freq_max <- sapply(training_freq_combined[,8:ncol(training_freq_combine
 
 # create extreme vals config files for each dataset 
 
-ex_freq_config <- data.frame(Variable = names(train_freq_max), 
+ex_freq_config <- data.frame(Variable = names(training_freq_max), 
                             Thrsh = training_freq_max)
 
 ex_date_config <- data.frame(Variable = names(train_dates_max), 

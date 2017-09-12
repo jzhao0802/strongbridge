@@ -12,7 +12,7 @@ library(palabmod)
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/No_specialities/"
+results_dir <-  "F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/"
 
 
 # Data in -----------------------------------------------------------------
@@ -71,10 +71,10 @@ combined_data <- read_rds(paste0(data_dir, "preliminary_model_data/", "01_prelim
 # remove subset and patient IDs to define modelling data:
 combined_model <- select(combined_data, -subset, -PATIENT_ID, -test_patient_id)
 
-#### REMOVE SPECIALITY VARIABLES:
-combined_model <- combined_model %>% select(-starts_with("S"))
-train_model <- train_model %>% select(-starts_with("S"))
-################################
+# #### REMOVE SPECIALITY VARIABLES:
+# combined_model <- combined_model %>% select(-starts_with("S"))
+# train_model <- train_model %>% select(-starts_with("S"))
+# ################################
 
 #  ------------------------------------------------------------------------
 # MODELLING
@@ -207,10 +207,10 @@ write_rds(xgb_model, paste0(results_dir, "XGB_preliminary_model.rds"))
 # PR CURVE ----------------------------------------------------------------
 
 # generate pr curve from the resample:
-pr_curve <- perf_binned_perf_curve(pred = res$pred)
+pr_curve <- perf_binned_perf_curve(pred = res$pred, bin_num = 100)
 
 # write out:
-write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_5_fold_freq.csv"))
+write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_5_fold_freq_100_bins.csv"))
 
 # ROCR pr curve:
 perf_vs_thresh <- generateThreshVsPerfData(res$pred, measures = list(tpr, ppv))
