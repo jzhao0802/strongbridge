@@ -68,8 +68,43 @@ write_rds(combined_data, paste0(data_dir, "preliminary_model_data/", "01_prelim_
 
 combined_data <- read_rds(paste0(data_dir, "preliminary_model_data/", "01_prelim_matched_combined_train_test.rds"))
 
+
+# ADD UNMACTHED SAMPLE TO COMBINED_DATA -----------------------------------
+
+scoring <- read_rds(paste0(data_dir, "03_random_scoring_freq_topcoded.rds"))
+scoring$label <- 0
+# remove patient ID which appear in the positives or training negatives:
+dupes <- c(which(scoring$PATIENT_ID %in% combined_data$PATIENT_ID[combined_data$subset == "train_neg"]),
+           which(scoring$PATIENT_ID %in% combined_data$PATIENT_ID[combined_data$subset == "pos"]))
+scoring <- scoring[-dupes,]
+scoring_deduped <- scoring[!duplicated(scoring$PATIENT_ID), ]
+
+set.seed(123)
+random_sample <- sample(nrow(scoring_deduped), length(combined_data$subset[combined_data$subset == "test_neg"]), 
+                        replace = FALSE)
+
+score_sample <- scoring_deduped[random_sample, ]
+
+write_rds(score_sample, paste0(data_dir, "preliminary_model_data/02_sample_scoring_cohort_unmatched_negative_rm_duplicates.rds"))
+
+score_sample$subset <- "test_neg"
+score_sample$test_patient_id <- NA
+score_sample$index_date <- NULL
+score_sample$lookback_date <- NULL
+# order columns so they are the same:
+score_sample <- score_sample[order(match(colnames(score_sample), colnames(combined_data)))]
+all.equal(colnames(score_sample), colnames(combined_data))
+
+combined_data[combined_data$subset == "test_neg", ] <- score_sample
+
+#  ------------------------------------------------------------------------
+
 # remove subset and patient IDs to define modelling data:
 combined_model <- select(combined_data, -subset, -PATIENT_ID, -test_patient_id)
+character_cols <- which(sapply(combined_model, class) == "character")
+combined_model[,character_cols] <- sapply(combined_model[,character_cols], as.numeric)
+#combined_model[,c(69,125,126,127)] <- sapply(combined_model[,c(69,125,126,127)], as.numeric)
+combined_model$label <- as.factor(combined_model$label)
 
 # #### REMOVE SPECIALITY VARIABLES:
 # combined_model <- combined_model %>% select(-starts_with("S"))
@@ -170,6 +205,10 @@ pr10 <- perf_make_pr_measure(10, "pr10")
 rin$train.inds <- train_indices
 rin$test.inds <- test_indices
 
+
+
+
+
 # cross validate
 res <- resample(learner = lrn_xgb, 
                 task = dataset,
@@ -185,7 +224,7 @@ all.equal(test_data$label, test_pred$truth)
 # add patient id:
 test_pred$PATIENT_ID <- test_data$PATIENT_ID
 # write out:
-write_rds(test_pred, paste0(results_dir, "XGB_prelim_test_predictions_1_1000.rds"))
+write_rds(test_pred, paste0(results_dir, "XGB_prelim_test_predictions_unmatched_1_1000.rds"))
 
 # SINGLE MODEL ------------------------------------------------------------
 
@@ -210,7 +249,7 @@ write_rds(xgb_model, paste0(results_dir, "XGB_preliminary_model.rds"))
 pr_curve <- perf_binned_perf_curve(pred = res$pred, bin_num = 100)
 
 # write out:
-write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_5_fold_freq_100_bins.csv"))
+write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_unmatched_5_fold_freq_100_bins.csv"))
 
 # ROCR pr curve:
 perf_vs_thresh <- generateThreshVsPerfData(res$pred, measures = list(tpr, ppv))
@@ -247,6 +286,7 @@ for(i in 1:length(res$models)) {
   write_csv(importance_fold, paste0(importance_dir, "VI_XGB_freq_fold_", i, ".csv"))
 }
 
+y <- read_rds("F:/Projects/Strongbridge/data/modelling/preliminary_model_data/02_sample_scoring_cohort_unmatched_negative_rm_duplicates.rds")
 
 #  ------------------------------------------------------------------------
 

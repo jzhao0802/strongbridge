@@ -13,15 +13,15 @@ results_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # DATA IN -----------------------------------------------------------------
 
 # sample
-raw_data <- read_csv(paste0(data_dir, "Scoring_Final_Sample_C000.csv"))
+raw_data <- read_csv(paste0(data_dir, "Scoring_Final_Sample_C000_UP.csv"))
 
 # training data for model (for comparison):
 train_data <- read_rds(paste0(training_dir, "01_train_combined_common_freq_topcoded.rds"))
 # training data including date diffs:
 train_combined <- read_rds(paste0(training_dir, "03_train_freq_datediffs_topcoded.rds"))
 
-# model ############ NO SPECIALITIES: #################
-xgb_model <- read_rds("F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/No_specialities/XGB_preliminary_model.rds")
+# model
+xgb_model <- read_rds("F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/XGB_preliminary_model.rds")
 
 # rename age and gender to AGE and GENDER:
 colnames(raw_data)[c(2,3,4,5)] <- c("lookback_date", "index_date", "AGE", "GENDER")
@@ -65,14 +65,17 @@ for( i in 6:ncol(raw_capped)){
 }
 
 # write out:
-write_rds(raw_capped, paste0(results_dir, "04_random_scoring_freq_topcoded.rds"))
+write_rds(raw_capped, paste0(results_dir, "03_random_scoring_freq_topcoded.rds"))
 
 
 ggplot(train_data[train_data$S_S37_AVG_CLAIM > 0,], aes(x=S_S37_AVG_CLAIM, ..density.., fill=as.factor(label))) + 
   geom_density(alpha=.3)
 
+ggplot(raw_capped, aes(x=S_S44_AVG_CLAIM, ..density..)) + 
+  geom_density(alpha=.3)
 
-
+ggplot(raw_selection, aes(x=S_S44_AVG_CLAIM, ..density..)) + 
+  geom_density(alpha=.3)
 
 
 
