@@ -168,10 +168,10 @@ rf_model <- train(learner = lrn_rf,
 
 
 # ANALYSIS ----------------------------------------------------------------
-pr_curve <- perf_binned_perf_curve(res$pred)
+pr_curve <- perf_binned_perf_curve(res$pred, bin_num = 100)
 
 # write out:
-write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_RF_5_fold_freq.csv"))
+write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_RF_5_fold_freq_100_bins.csv"))
 
 # write out models:
 for( i in 1:length(res$models)) {

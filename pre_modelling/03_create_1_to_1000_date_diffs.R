@@ -14,7 +14,7 @@ output_dir <- "F:/Projects/Strongbridge/data/modelling/"
 
 # Date in -----------------------------------------------------------------
 
-dates_unform <- read_rds(paste0(data_dir, "02_Neg_dates_1_to_1000.rds"))
+dates_unform <- read_rds(paste0(data_dir, " 02_Neg_dates_1_to_1000_new_index.rds"))
 
 
 # Format dates ------------------------------------------------------------
@@ -27,7 +27,7 @@ S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA,
 S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
 
 # add index date column;
-S_vars_dates$index_date <- mdy(dates_unform$index_date)
+S_vars_dates$index_date <- ymd(dates_unform$index_date)
 
 # convert to yearmonths:
 S_vars_yearmon <- as.data.frame(sapply(S_vars_dates, as.yearmon))
@@ -45,13 +45,14 @@ dates_form <-  date_format(input_data = dates_unform,
 
 
 # add index date column for creation of date diffs
-dates_form$index_date <- mdy(dates_unform$index_date)
+dates_form$index_date <- ymd(dates_unform$index_date)
 
 # create date difference columns
 date_differences_776000 <- create_date_diffs(input = dates_form[1:776000, 2:ncol(dates_form)],
                                              index_col = "index_date")
 write_rds(date_differences_776000, paste(output_dir, "date_diffs_1_1000_776000.rds"))
 gc()
+rm(date_differences_776000)
 date_differences_end <- create_date_diffs(input = dates_form[776001:nrow(dates_form), 2:ncol(dates_form)],
                                           index_col = "index_date")
 write_rds(date_differences_end, paste(output_dir, "date_diffs_1_1000_end.rds"))
