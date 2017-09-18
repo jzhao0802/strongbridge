@@ -12,6 +12,7 @@ library(palabmod)
 # globals -----------------------------------------------------------------
 
 data_dir <- "F:/Projects/Strongbridge/data/modelling/"
+output_data_dir <- "F:/Projects/Strongbridge/data/modelling/Advanced_model_data/"
 results_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_advanced/"
 
 
@@ -21,12 +22,19 @@ results_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_advanced/"
 
 # Data in -----------------------------------------------------------------
 
-train_freq <- read_rds(paste0(data_dir, "01_train_combined_common_freq_topcoded.rds"))
-test_neg_freq <- read_rds(paste0(data_dir, "02_Neg_frequencies_1_to_1000_topcoded.rds"))
+train_freq <- read_rds(paste0(data_dir, "01_train_combined_common_freq_new_index_topcoded.rds"))
+test_neg_freq <- read_rds(paste0(data_dir, "02_Neg_frequencies_1_to_1000_new_index_topcoded.rds"))
 
-train_dates <- read_rds(paste0(data_dir, "01_train_combined_date_differences_topcoded.rds"))
-test_neg_dates <- read_rds(paste0(data_dir, "02_Neg_date_differences_1_to_1000_topcoded.rds"))
+train_dates <- read_rds(paste0(data_dir, "01_train_combined_date_differences_new_index.rds"))
+test_neg_dates <- read_rds(paste0(data_dir, "02_Neg_date_differences_1_to_1000_new_index.rds"))
 
+# remove new index date column (accidentally left in):
+train_freq$index_date <- train_freq$new_index_date
+train_freq$new_index_date <- NULL
+
+# check equality of patient IDs:
+all.equal(train_freq$PATIENT_ID, train_dates$PATIENT_ID)
+all.equal(test_neg_dates$PATIENT_ID, test_neg_freq$PATIENT_ID)
 all.equal(test_neg_freq$lookback_date, test_neg_dates$lookback_date)
 
 # extract common variables:
@@ -34,6 +42,7 @@ train_common <- train_freq %>% select(PATIENT_ID, test_patient_id, index_date,
                                       lookback_date, label, AGE, GENDER)
 test_common <- test_neg_freq %>% select(PATIENT_ID, test_patient_id, index_date, 
                                         lookback_date, label, AGE, GENDER)
+
 
 # create combined datasets:
 train_combined <- data.frame(train_common,
@@ -53,16 +62,16 @@ dupes <- which(test_combined$PATIENT_ID %in% train_combined$PATIENT_ID)
 test_combined <- test_combined[-dupes,]
 
 # write out these datasets to rds:
-write_rds(train_combined, paste0(data_dir, "03_train_freq_datediffs_topcoded.rds"))
-write_rds(test_combined, paste0(data_dir, "03_test_neg_freq_datediffs_1_1000_topcoded_rm_dupes.rds"))
+write_rds(train_combined, paste0(output_data_dir, "03_train_freq_datediffs.rds"))
+write_rds(test_combined, paste0(output_data_dir, "03_test_neg_freq_datediffs_1_1000_rm_dupes.rds"))
 
 #  ------------------------------------------------------------------------
 # MODELLING
 #  ------------------------------------------------------------------------
 
 # datasets
-train_combined <- read_rds(paste0(data_dir, "03_train_freq_datediffs_topcoded.rds"))
-test_combined <- read_rds(paste0(data_dir, "03_test_neg_freq_datediffs_1_1000_topcoded_rm_dupes.rds"))
+train_combined <- read_rds(paste0(data_dir, "03_train_freq_datediffs.rds"))
+test_combined <- read_rds(paste0(data_dir, "03_test_neg_freq_datediffs_1_1000_rm_dupes.rds"))
 
 # exclude non-modelling columns
 exclude <- c("-PATIENT_ID", "-test_patient_id", "-index_date", "-lookback_date")
@@ -110,6 +119,8 @@ res <- resample(learner = lrn_xgb,
                 models = TRUE,
                 measures = pr10)
 
+write_rds(res$pred$data, paste0(results_dir, "XGB_adv_predictions_20170915.rds"))
+
 # SINGLE MODEL ------------------------------------------------------------
 
 train_model$label <- as.factor(train_model$label)
@@ -129,9 +140,9 @@ write_rds(xgb_model, paste0(results_dir, "XGB_Model_adv_freq_datediffs.rds"))
 # PR CURVE ----------------------------------------------------------------
 
 # generate pr curve from the resample:
-pr_curve <- perf_binned_perf_curve(pred = res$pred)
+pr_curve <- perf_binned_perf_curve(pred = res$pred, bin_num = 100)
 
-write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_adv_5_fold_freq.csv"))
+write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_adv_5_fold_freq_100_bins.csv"))
 
 # VARIABLE IMPORTANCE -----------------------------------------------------
 

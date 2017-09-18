@@ -97,6 +97,10 @@ all.equal(colnames(score_sample), colnames(combined_data))
 
 combined_data[combined_data$subset == "test_neg", ] <- score_sample
 
+# write out unmatched data:
+write_rds(combined_data, paste0(data_dir, "preliminary_model_data/", "03_prelim_unmatched_combined_train_test.rds"))
+combined_data <- read_rds(paste0(data_dir, "preliminary_model_data/", "03_prelim_unmatched_combined_train_test.rds"))
+
 #  ------------------------------------------------------------------------
 
 # remove subset and patient IDs to define modelling data:
