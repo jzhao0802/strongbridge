@@ -13,12 +13,14 @@ results_dir <- "F:/Projects/Strongbridge/data/modelling/"
 # DATA IN -----------------------------------------------------------------
 
 # sample
-raw_data <- read_csv(paste0(data_dir, "Scoring_Final_Sample_C000_UP.csv"))
+raw_data <- read_csv(paste0(data_dir, "Scoring_Final_Sample_C000_UP.csv"),
+                     col_types = cols(PATIENT_ID = col_character(), .default = col_guess()))
 
 # training data for model (for comparison):
-train_data <- read_rds(paste0(training_dir, "01_train_combined_common_freq_topcoded.rds"))
+train_data <- read_rds(paste0(training_dir, "01_train_combined_common_freq_new_index_topcoded.rds"))
+
 # training data including date diffs:
-train_combined <- read_rds(paste0(training_dir, "03_train_freq_datediffs_topcoded.rds"))
+train_combined <- read_rds(paste0(training_dir, "01_train_combined_date_differences_new_index.rds"))
 
 # model
 xgb_model <- read_rds("F:/Projects/Strongbridge/results/modelling/XGBOOST_preliminary/XGB_preliminary_model.rds")
@@ -63,6 +65,8 @@ for( i in 6:ncol(raw_capped)){
   raw_capped[,i][raw_capped[,i] > Thrsh] <- Thrsh
   
 }
+
+raw_capped$label <- 0
 
 # write out:
 write_rds(raw_capped, paste0(results_dir, "03_random_scoring_freq_topcoded.rds"))

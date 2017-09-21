@@ -43,7 +43,7 @@ pred$data$PATIENT_ID <- scoring$PATIENT_ID
 counts <- sapply(pr_curve$thresh, function(x) { length(pred$data$prob.1[pred$data$prob.1 >= x]) })
 counts_df <- data.frame(counts_sample_scoring_cohort = counts)
 
-expected_counts <- data.frame( Expected_count_50_million = round(counts*(50000000/nrow(model_data))) )
+# expected_counts <- data.frame( Expected_count_50_million = round(counts*(50000000/nrow(model_data))) )
 
 
 # GET TOP 10 HIGH RISK PATIENTS -------------------------------------------

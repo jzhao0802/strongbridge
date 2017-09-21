@@ -70,9 +70,17 @@ write_rds(test_combined, paste0(output_data_dir, "03_test_neg_freq_datediffs_1_1
 #  ------------------------------------------------------------------------
 
 # datasets
-train_combined <- read_rds(paste0(data_dir, "03_train_freq_datediffs.rds"))
-test_combined <- read_rds(paste0(data_dir, "03_test_neg_freq_datediffs_1_1000_rm_dupes.rds"))
+train_combined <- read_rds(paste0(data_dir, "Advanced_model_data/03_train_capped_freq_datediffs.rds"))
+test_combined <- read_rds(paste0(data_dir, "Advanced_model_data/03_test_neg_capped_freq_datediffs_1_1000_rm_dupes.rds"))
 
+# create combined dataset and write out:
+compare <- read_rds(paste0(data_dir, "preliminary_model_data/01_prelim_matched_combined_train_test.rds"))
+train_combined$subset <- ifelse(train_combined$label == 1, "pos", "train_neg")
+test_combined$subset <- "test_neg"
+
+combined_data <- rbind(train_combined, test_combined)
+all.equal(compare$PATIENT_ID, combined_data$PATIENT_ID)
+write_rds(combined_data, paste0(data_dir, "Advanced_model_data/", "04_combined_train_matched_test_capped_freq_datediff.rds"))
 # exclude non-modelling columns
 exclude <- c("-PATIENT_ID", "-test_patient_id", "-index_date", "-lookback_date")
 
