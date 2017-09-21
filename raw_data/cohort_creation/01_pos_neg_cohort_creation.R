@@ -10,7 +10,7 @@ library(lubridate)
 library(plyr)
 # LOAD DATA ---------------------------------------------------------------
 
-data_loc <- "F:/Projects/Strongbridge/data/fs_modelling_cohorts/Strongbridge_"
+data_loc <- "F:/Projects/Strongbridge/data/Cohorts/00_Raw_data_pull/Strongbridge_"
 
 Neg_DX <- read_csv(paste0(data_loc, "Neg_DX_Update20170724.csv"),
                    col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
@@ -53,16 +53,10 @@ Neg_all <- join_all(list(Neg_PA, Neg_DX, Neg_RX, Neg_PR, Neg_SP), type = "left")
 Pos_all$label <- 1
 Neg_all$label <- 0
 #  ------------------------------------------------------------------------
-# VARIABLE ENCODING:
+# TAKE A LOOK AT VARIABLE ENCODING:
 table(str_sub(colnames(Neg_fre), -5, -1))
 table(str_sub(colnames(Pos_all), -5, -1))
-# SUMMARY:
-# Date variables: _EXP_, T_EXP, XP_DT: all contain "EXP"
-# Claims counts: CLAIM_CNT, 
-# Frequencies:
-# Flags:
-# Common variables:"PATIENT_ID", "AGE", "GENDER", "index_date", "lookback_date",
-# "lookback_days", "test_patient_id"
+
 #  ------------------------------------------------------------------------
 
 # POSITIVES
