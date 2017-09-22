@@ -69,6 +69,7 @@ write_rds(dates_form, paste0(temp_dd_dir, "dates_form.rds"))
 dates_form <- read_rds(paste0(temp_dd_dir, "dates_form.rds"))
 
 # create date difference columns
+
 date_differences_776000 <- create_date_diffs(input = dates_form[1:776000, 2:ncol(dates_form)],
                                              index_col = "index_date")
 write_rds(date_differences_776000, paste(temp_dd_dir, "date_diffs_unmatched_776000.rds"))

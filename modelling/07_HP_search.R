@@ -76,15 +76,23 @@ write_rds(res_unmatched, paste0(input_dir, "resample_unmatched_HP_random_search_
 
 write_rds(res, paste0(input_dir, "resample_matched_HP_random_search_object.rds"))
 
+res_unmatched <- read_rds(paste0(input_dir, "resample_unmatched_HP_random_search_object.rds"))
 
 # Cross validate on optimal hyperparameters -------------------------------
 
-lrn_xgb_opt <- setHyperPars(lrn_xgb, par.vals = c(res$x, nrounds = 100))
+lrn_xgb_opt <- setHyperPars(lrn_xgb, par.vals = c(res_unmatched$x, nrounds = 100))
 
 # run CV
 res_opt <- resample(learner = lrn_xgb_opt, 
                 task = dataset, 
                 resampling = rin)
+
+all.equal(as.factor(res_opt$pred$data$truth), as.factor(combined$label[unlist(test_indices)]))
+
+# add patient id to prediction data:
+res_opt$pred$data$PATIENT_ID <- combined$PATIENT_ID[unlist(test_indices)]
+
+write_rds(res_opt$pred$data, paste0(results_dir, "XGB_adv_test_predictions_1_1000.rds"))
 
 pr_curve_opt <- perf_binned_perf_curve(pred = res_opt$pred, bin_num = 100)
 
