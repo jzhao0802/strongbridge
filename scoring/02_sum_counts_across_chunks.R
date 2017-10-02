@@ -2,7 +2,7 @@
 #   Sum all counts from all chunks
 #  ------------------------------------------------------------------------
 
-num_chunks = c(1:28)
+num_chunks = c(1:44,45,47:66)
 counts <- vector("list") 
 
 counts[[1]]<- read_csv(paste0(results_dir, "C", str_pad(1, 3, pad = "0"), "_score_sample_counts.csv"))
