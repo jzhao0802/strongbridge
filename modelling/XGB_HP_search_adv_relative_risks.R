@@ -13,28 +13,22 @@ vars <- readRDS("F:/Projects/Strongbridge/data/modelling/Advanced_model_data/05_
 #-------------------------------------------------------------------------------
 # Run relative risks
 #-------------------------------------------------------------------------------
-count = 17
+count = 12
 rel_risks <- vector("list", count)  
 
-rel_risks[[1]] <- relative_risk(rr_col = "D_2768_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
+rel_risks[[1]] <- relative_risk(rr_col = "AGE", bin_size_o = 10, c_min_o = 0, include_lowest = T)
 rel_risks[[2]] <- relative_risk(rr_col = "GENDER", bin_size_o = 1, include_lowest = F)
-rel_risks[[3]] <- relative_risk(rr_col = "G_797000_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
-rel_risks[[4]] <- relative_risk(rr_col = "S_S44_LAST_EXP_", bin_size_o = 30, c_min_o = 0)
-rel_risks[[5]] <- relative_risk(rr_col = "AGE", bin_size_o = 0.5, c_min_o = 0, include_lowest = F)
-rel_risks[[6]] <- relative_risk(rr_col = "P_99214_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[7]] <- relative_risk(rr_col = "G_371000_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[8]] <- relative_risk(rr_col = "D_7807_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[9]] <- relative_risk(rr_col = "D_7288_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[10]] <- relative_risk(rr_col = "G_797000_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[11]] <- relative_risk(rr_col = "G_371000_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
-rel_risks[[12]] <- relative_risk(rr_col = "D_4019_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[13]] <- relative_risk(rr_col = "G_797000_FIRST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[14]] <- relative_risk(rr_col = "P_99204_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[15]] <- relative_risk(rr_col = "P_99223_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[16]] <- relative_risk(rr_col = "P_99215_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
-rel_risks[[17]] <- relative_risk(rr_col = "P_99285_LAST_EXP_DT", bin_size_o = 30, c_min_o = 0)
 
-
+rel_risks[[3]] <- relative_risk(rr_col = "D_2768_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[4]] <- relative_risk(rr_col = "G_797000_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[5]] <- relative_risk(rr_col = "S_S44_AVG_CLAIM", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[6]] <- relative_risk(rr_col = "G_371000_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[7]] <- relative_risk(rr_col = "P_99214_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[8]] <- relative_risk(rr_col = "D_7807_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[9]] <- relative_risk(rr_col = "D_7288_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[10]] <- relative_risk(rr_col = "D_4019_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[11]] <- relative_risk(rr_col = "D_3449_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
+rel_risks[[12]] <- relative_risk(rr_col = "P_99204_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
 
 rel_risks_all <- rel_risks[[1]]
 for (i in 2:count) {

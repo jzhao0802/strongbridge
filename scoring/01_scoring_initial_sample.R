@@ -35,7 +35,9 @@
 #     
 #  ------------------------------------------------------------------------
 
+for (c in c(45,47:66)) {
 
+timestamp()
 #  ------------------------------------------------------------------------
 # Globals
 #  ------------------------------------------------------------------------
@@ -45,19 +47,25 @@ library(stringr)
 library(lubridate)
 library(zoo)
 # These helper functions are in on the master branch:
-source("F:/Lachlan/strongbridge_ppp/scoring/00_scoring_helper_functions.R")
+source("F:/Harsha/Strongbridge/scoring/00_scoring_helper_functions.R") 
 
-score_dir <- "F:/Projects/Strongbridge/data/Random_sample_scoring/"
+score_dir <- "F:/Projects/Strongbridge/data/scoring_cohort_chunks/"
 model_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_advanced/02_XGB_optimal_HP/"
 topcode_dir <- "F:/Projects/Strongbridge/data/modelling/"
 results_dir <- "F:/Projects/Strongbridge/results/scoring/"
+
+chunk <- paste0("C", str_pad(c, 3, pad = "0"))
 
 #  ------------------------------------------------------------------------
 # 1. Read in data, model, PR Curve (for patient counts), and topcoding config
 #  ------------------------------------------------------------------------
 
+<<<<<<< HEAD
 # I've set nmax to 1000 here so that this example can be run quickly:
 score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_C000_UP.csv"), n_max = 1000,
+=======
+score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_", chunk, ".csv"),
+>>>>>>> 8a070cea4f1089a8a747302a6e3e586b94a400a3
                       col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 
 model <- read_rds(paste0(model_dir, "xgb_model_optimal_HP.rds"))
@@ -185,10 +193,15 @@ score_combined <- data.frame(common,
                              S_date_diffs)
 
 # at this point we can remove everything that isn't needed for modelling:
-keep <- grep(paste(c("pr_curve", "score_combined", "model"), collapse = "|"), ls())
-rm(list = ls()[-keep])
+keep <- c("pr_curve", 
+          "score_combined", 
+          "model", 
+          "model_features",
+          "model_dir",
+          "results_dir", 
+          "chunk")
+rm(list = setdiff(ls(), keep))
 gc()
-
 
 #  ------------------------------------------------------------------------
 #   8. Run data through model:
@@ -235,7 +248,8 @@ no_brainers <- sapply(pr_curve$thresh, function(x) {
                               score_model$G_371000_AVG_CLAIM_CNT > 0])})
 
 # combine into dataframe:
-counts_df <- data.frame(counts_sample_scoring_cohort = counts,
+counts_df <- data.frame(pr_curve, 
+                        counts_sample_scoring_cohort = counts,
                         patients_with_HYPP_and_CAIs = no_brainers,
                         prop_HYPP_and_CAI = no_brainers/counts
 )
@@ -259,14 +273,13 @@ top_10_patients <- left_join(top_10, score_combined, by = "PATIENT_ID")
 #   11. Write out all results
 #  ------------------------------------------------------------------------
 
-write_rds(pred_data, paste0(results_dir, "score_sample_pred.rds"))
-write_csv(counts_df, paste0(results_dir, "score_sample_counts.csv"))
-write_rds(top_10_patients, paste0(results_dir, "score_sample_patient_profiles.csv"))
+write_rds(pred_data, paste0(results_dir, chunk, "_score_sample_pred.rds"))
+write_csv(counts_df, paste0(results_dir, chunk, "_score_sample_counts.csv"))
+write_rds(top_10_patients, paste0(results_dir, chunk, "_score_sample_patient_profiles.rds"))
 
 
+timestamp()
 
 
-
-
-
+}
 
