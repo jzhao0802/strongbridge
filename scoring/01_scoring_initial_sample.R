@@ -3,7 +3,6 @@
 # SCORING STRONGBRIDGE
 #  ------------------------------------------------------------------------
 
-
 #  ------------------------------------------------------------------------
 # SCORING PIPELINE:
 # steps:
@@ -57,6 +56,7 @@ results_dir <- "F:/Projects/Strongbridge/results/scoring/"
 # 1. Read in data, model, PR Curve (for patient counts), and topcoding config
 #  ------------------------------------------------------------------------
 
+# I've set nmax to 1000 here so that this example can be run quickly:
 score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_C000_UP.csv"), n_max = 1000,
                       col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 
