@@ -16,7 +16,7 @@ vars <- readRDS("F:/Projects/Strongbridge/data/modelling/Advanced_model_data/05_
 count = 12
 rel_risks <- vector("list", count)  
 
-rel_risks[[1]] <- relative_risk(rr_col = "AGE", bin_size_o = 10, c_min_o = 0, include_lowest = F)
+rel_risks[[1]] <- relative_risk(rr_col = "AGE", bin_size_o = 10, c_min_o = 0, include_lowest = T)
 rel_risks[[2]] <- relative_risk(rr_col = "GENDER", bin_size_o = 1, include_lowest = F)
 
 rel_risks[[3]] <- relative_risk(rr_col = "D_2768_AVG_CLAIM_CNT", bin_size_o = 1, c_min_o = 0, include_lowest = F)
