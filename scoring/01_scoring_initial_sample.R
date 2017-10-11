@@ -35,9 +35,6 @@
 #     
 #  ------------------------------------------------------------------------
 
-for (c in c(45,47:66)) {
-
-timestamp()
 #  ------------------------------------------------------------------------
 # Globals
 #  ------------------------------------------------------------------------
@@ -46,26 +43,32 @@ library(mlr)
 library(stringr)
 library(lubridate)
 library(zoo)
-# These helper functions are in on the master branch:
-source("F:/Harsha/Strongbridge/scoring/00_scoring_helper_functions.R") 
 
+
+for (c in 128) {
+
+timestamp()
+
+  # These helper functions are in on the master branch:
+source("F:/Lachlan/strongbridge_ppp/scoring/00_scoring_helper_functions.R") 
+  
 score_dir <- "F:/Projects/Strongbridge/data/scoring_cohort_chunks/"
 model_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_advanced/02_XGB_optimal_HP/"
 topcode_dir <- "F:/Projects/Strongbridge/data/modelling/"
 results_dir <- "F:/Projects/Strongbridge/results/scoring/"
-
+  
+  
 chunk <- paste0("C", str_pad(c, 3, pad = "0"))
 
 #  ------------------------------------------------------------------------
 # 1. Read in data, model, PR Curve (for patient counts), and topcoding config
 #  ------------------------------------------------------------------------
 
-<<<<<<< HEAD
-# I've set nmax to 1000 here so that this example can be run quickly:
-score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_C000_UP.csv"), n_max = 1000,
-=======
+# #<<<<<<< HEAD
+# # I've set nmax to 1000 here so that this example can be run quickly:
+# score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_C000_UP.csv"), n_max = 1000,
+# =======
 score_raw <- read_csv(paste0(score_dir, "Scoring_Final_Sample_", chunk, ".csv"),
->>>>>>> 8a070cea4f1089a8a747302a6e3e586b94a400a3
                       col_types = (cols(PATIENT_ID = col_character(), .default = col_guess())))
 
 model <- read_rds(paste0(model_dir, "xgb_model_optimal_HP.rds"))
@@ -86,13 +89,19 @@ score_raw <- score_raw %>% rename(index_date = index_dt2,
 
 score_raw$GENDER <- ifelse(score_raw$GENDER == "F", 1, 0)
 
+# # Note: for group 128, I remove patients with less than 24 months lookback:
+ score_raw$lookback_date <- mdy(score_raw$lookback_date)
+ score_raw$index_date <- mdy(score_raw$index_date)
+ score_raw$lookback_length <- score_raw$index_date - score_raw$lookback_date
+ score_raw <- score_raw %>% filter(lookback_length >= 730)
+ score_raw$lookback_length <-  NULL
 
 #  ------------------------------------------------------------------------
 # 3. Ensure all variables in model are present in data and check no 
 # accidental frequencies or dates are in data but not in model.
 #  ------------------------------------------------------------------------
 
-two_way_setdiff(x = model$features, y = colnames(score_raw))
+# two_way_setdiff(x = model$features, y = colnames(score_raw))
 
 #  ------------------------------------------------------------------------
 #  4. Select modelling variables and split data into:
@@ -114,6 +123,7 @@ frequencies <- score_subset %>% select(contains("AVG"))
 # dates and index date
 dates_unform <- score_subset %>% select(index_date, contains("EXP"))
 
+rm(score_raw)
 
 #  ------------------------------------------------------------------------
 # 5. Process frequencies:
@@ -280,6 +290,8 @@ write_rds(top_10_patients, paste0(results_dir, chunk, "_score_sample_patient_pro
 
 timestamp()
 
+rm(list = ls())
+gc()
 
 }
 
