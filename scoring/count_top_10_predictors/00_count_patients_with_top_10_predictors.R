@@ -37,9 +37,9 @@ scores_file_prefix <- paste(score_path, 'C', sep='/')
 
 
 #cl <- makeCluster(detectCores ())
-library('doParallel')
+#library('doParallel')
 #registerDoParallel(detectCores(), type='FORK')
-registerDoParallel(3, type='FORK')
+#registerDoParallel(3, type='FORK')
 
 #Set features that are required for selection
 subset <- c('CLAIM_CNT', 'FLAG', 'AVG_CLAIM_CNT', 'AVG_CLAIM')
@@ -54,8 +54,8 @@ end_file = 127
 #output <- foreach(i=start_file:end_file) %dopar% {scores[[i]]}
 
 for (i in start_file:end_file){
-#output<-foreach(i=start_file:end_file) %dopar% {
-#foreach(i=start_file:end_file) %dopar% {
+  #output<-foreach(i=start_file:end_file) %dopar% {
+  #foreach(i=start_file:end_file) %dopar% {
   #Get scores for current file
   #Start timing
   i=46
@@ -67,7 +67,7 @@ for (i in start_file:end_file){
   logfile <- paste(log_base, Sys.getpid(), sep='/')
   write('Starting loop', file=logfile, append=TRUE)
   start <- Sys.time()
-
+  
   #Load PR curve
   PR_curve <- readr::read_csv(PR_curve_path)
   PR_curve <- cbind(num_patients_with_predictors=0,PR_curve)
@@ -77,7 +77,7 @@ for (i in start_file:end_file){
   write('Setting score matrix', file=logfile, append=TRUE)
   #cur_scores<-scores[[i]]
   #Set path for current scoring cohort file
-
+  
   cur_scores_file_path <- paste0(scores_file_prefix, str_pad(i, 3, pad='0'), '_score_sample_pred.rds')
   file <- paste0(scoring_file_prefix, str_pad(i, 3, pad='0'), '.csv')
   
@@ -90,24 +90,20 @@ for (i in start_file:end_file){
   df <- readr::read_csv(file)
   cur_scores <- readRDS(cur_scores_file_path)
   cur_scores$model_score <- cur_scores$prob.1 
-  #If on first file, set features to check
-  #if (i == start_file) {
-    #Set features that are available in the dataset (only need to do this for first file...)
-  write('Setting features', file=logfile, append=TRUE)
-    all_features <- c()
-    
-    all_variables <- names(df)
-    for (feature in features){
-      for (i in subset){
-        new_feature <- paste(feature, i, sep='_')
-        if (new_feature %in% all_variables) all_features <- c(all_features, new_feature)
-        #if (new_feature %in% all_variables) print(paste(new_feature))
-        
-      }
-    }
-  #}
   
-
+  #Set features that are available in the dataset (only need to do this for first file...)
+  write('Setting features', file=logfile, append=TRUE)
+  all_features <- c()
+  
+  all_variables <- names(df)
+  for (feature in features){
+    for (i in subset){
+      new_feature <- paste(feature, i, sep='_')
+      if (new_feature %in% all_variables) all_features <- c(all_features, new_feature)
+      #if (new_feature %in% all_variables) print(paste(new_feature))
+      
+    }
+  }
   
   write('Setting Scores', file=logfile, append=TRUE)
   #Select subset of predictors that we require a patient to have
@@ -116,7 +112,6 @@ for (i in start_file:end_file){
   df_f[is.na(df_f)] <- 0
   df_f <- as.data.frame(lapply(df_f, as.numeric))
   #create truth table of predictors that have values (i.e. > 0)
-  #selected_patients_truth_table <- df_f > 0
   #Perform sum across columns and check if sum is > 0 - this is effectively doing an OR operation across columns
   selected_patients <- rowSums(df_f) >0
   #Get patient ids for patients that have these indicators
@@ -144,10 +139,6 @@ for (i in start_file:end_file){
   write(paste('Saving RDS file', output_file), file=logfile, append=TRUE)
   
   saveRDS(PR_curve, output_file)
-  #PR_curve
   
-  #break
 }
-
-
 
