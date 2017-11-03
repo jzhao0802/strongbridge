@@ -58,7 +58,7 @@ for (i in start_file:end_file){
   #foreach(i=start_file:end_file) %dopar% {
   #Get scores for current file
   #Start timing
-  i=46
+  #i=46
   gc()
   output_file <- paste0(paste(output_path, 'patient_predictor_count_', sep='/'), i, '.rds')
   #if (file_test("-f", output_file)) return(NULL)
