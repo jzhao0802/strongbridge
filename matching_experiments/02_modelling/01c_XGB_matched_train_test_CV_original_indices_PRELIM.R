@@ -59,8 +59,8 @@ combined_model$label <- as.factor(combined_model$label)
 dataset <- makeClassifTask(id = "Prelim_strongbridge_matching_orig",
                            data = combined_model,
                            target = "label",
-                           positive = 1
-                           blocking=matched_ids)
+                           positive = 1,
+                           blocking = matched_ids)
 
 # make learner
 lrn_xgb <- makeLearner("classif.xgboost", predict.type = "prob")
@@ -74,7 +74,7 @@ lrn_xgb$par.vals <- list(
 # RESAMPLE ----------------------------------------------------------------
 
 # read in pre-created indices
-rdesc <- makeResampleDesc(method = "CV", iters = 5, predict = "both", stratify = F)
+rdesc <- makeResampleDesc(method = "CV", iters = 5, predict = "test", stratify = F)
 #rdesc <- makeResampleDesc(method = "CV", iters = 5, predict = "test")
 rin <- makeResampleInstance(desc = rdesc,
                             task = dataset)

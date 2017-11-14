@@ -152,7 +152,7 @@ if (standard_CV) {
                               test_indices = CV_indices$test_indices, 
                               train_indices = CV_indices$train_indices)
   #Run CV including freq ONLY
-  res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM_CNT|label|AGE|GENDER')),
+  res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label|AGE|GENDER')),
                                    full_results_dir, 'freq', 
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
@@ -162,4 +162,20 @@ if (standard_CV) {
                                  full_results_dir, 'dd', 
                                  test_indices = CV_indices$test_indices, 
                                  train_indices = CV_indices$train_indices)
+  
+  #Run CV including dd/freq ONLY
+  res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|DT_DIFF|label')),
+                                   full_results_dir, 'freq_dd_only', 
+                                   test_indices = CV_indices$test_indices, 
+                                   train_indices = CV_indices$train_indices)
+  
+  res_freq <- run_cross_validation(dplyr::select(combined_model, matches('DT_DIFF|label')),
+                                   full_results_dir, 'dd_only', 
+                                   test_indices = CV_indices$test_indices, 
+                                   train_indices = CV_indices$train_indices)
+  
+  res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label')),
+                                   full_results_dir, 'freq_only', 
+                                   test_indices = CV_indices$test_indices, 
+                                   train_indices = CV_indices$train_indices)
 }

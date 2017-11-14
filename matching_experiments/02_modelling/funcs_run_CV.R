@@ -40,7 +40,6 @@ run_cross_validation <- function(model_data, results_dir, output_suffix,
                              positive = positive_class, 
                             blocking = matched_ids  ) 
   }
-  # create resampling description and instance:
   
   if (learner_type == 'XGB') {
     # make xgboost learner:
@@ -48,8 +47,9 @@ run_cross_validation <- function(model_data, results_dir, output_suffix,
     lrn_xgb$par.vals <- learner_params
   }
   
-  # create resampling instance:
+  # create resampling description and instance:
   rdesc <- mlr::makeResampleDesc(method = "CV", iters = K, predict = predict)
+  # create resampling instance:
   rin <- mlr::makeResampleInstance(desc = rdesc, task = dataset)
 
   #Add training/test indices if specified
