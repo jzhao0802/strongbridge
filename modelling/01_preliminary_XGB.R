@@ -255,7 +255,7 @@ pr_curve <- perf_binned_perf_curve(pred = res$pred, bin_num = 100)
 # write out:
 write_csv(pr_curve$curve, paste0(results_dir, "PRCurve_XGB_unmatched_5_fold_freq_100_bins.csv"))
 
-# ROCR pr curve:
+# PR curve from mlr/ROCR:
 perf_vs_thresh <- generateThreshVsPerfData(res$pred, measures = list(tpr, ppv))
 plotROCCurves(perf_vs_thresh)
 
