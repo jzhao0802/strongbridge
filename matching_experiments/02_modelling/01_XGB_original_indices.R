@@ -16,19 +16,35 @@ source('F:/Shaun/Strongbridge/Code/strongbridge_ppp/matching_experiments/02_mode
 
 # globals -----------------------------------------------------------------
 
-data_dir <- "F:/Projects/Strongbridge/data/modelling/"
-results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
-data_dir <- 'F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/'
-cohort_dir <- '00_matched_train_unmatched_test/'
-test_strat <- '1_1000_unmatched_test/'
-full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
-modelling_data_dir <- paste0('F:/Projects/Strongbridge/data/matching_experiments/02_modelling/', test_strat)
+lachlan_data <- F
 
-combined_data <- read_rds(paste0(data_dir, cohort_dir, 
-                                 '01_combined_freq_datediff_topcoded_unmatched_test_original_index.rds'))
-
+if (lachlan_data){
+  adv_data_dir <- "F:/Projects/Strongbridge/data/modelling/Advanced_model_data/"
+  data_dir <- "F:/Projects/Strongbridge/data/modelling/"
+  results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
+  cohort_dir <- '00_matched_train_unmatched_test/'
+  test_strat <- '1_1000_unmatched_test/'
+  full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
+  full_data_dir <- paste0('F:/Projects/Strongbridge/data/matching_experiments/02_modelling/', test_strat)
+  
+  # data in -----------------------------------------------------------------
+  
+  combined_data <- read_rds(paste0(adv_data_dir,
+                              "05_combined_train_unmatched_test_capped_freq_datediff.rds"))
+} else {
+  data_dir <- "F:/Projects/Strongbridge/data/modelling/"
+  results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
+  data_dir <- 'F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/'
+  cohort_dir <- '00_matched_train_unmatched_test/'
+  test_strat <- '1_1000_unmatched_test/'
+  full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
+  modelling_data_dir <- paste0('F:/Projects/Strongbridge/data/matching_experiments/02_modelling/', test_strat)
+  
+  combined_data <- read_rds(paste0(data_dir, cohort_dir, 
+                                   '01_combined_freq_datediff_topcoded_unmatched_test_original_index.rds'))
+  
+}
 combined_data$PATIENT_ID <- as.numeric(combined_data$PATIENT_ID)
-
 unmatched_1_1000 <- F
 standard_CV <- T
 
@@ -37,7 +53,9 @@ standard_CV <- T
 #  ------------------------------------------------------------------------
 if (unmatched_1_1000) {
 
-  
+  test_strat <- '1_1000_unmatched_test/'
+  full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
+  modelling_data_dir <- paste0('F:/Projects/Strongbridge/data/matching_experiments/02_modelling/', test_strat) 
   # remove subset and patient IDs to define modelling data:
   combined_model <- select(combined_data, -subset, -PATIENT_ID, -test_patient_id, -lookback_date, -index_date)
   character_cols <- which(sapply(combined_model, class) == "character")
@@ -106,37 +124,46 @@ if (standard_CV){
   CV_ids <- read_rds(paste0(modelling_data_dir, "1_50_matched_train_1_50_matched_test_CV_ids.rds"))
   CV_indices <- convert_ids_to_indices(combined_data$PATIENT_ID, CV_ids$train_ids, 
                                        CV_ids$test_ids)
-  
+
+  #Sanity check ids
+  #for (i in 1:5){
+  #  print(paste(any(CV_ids$test_ids[[i]] %in% CV_ids$train_ids[[i]])))
+  #  print(paste(sum(combined_data$PATIENT_ID[combined_data$label==1] %in% CV_ids$test_ids[[i]]), sum(combined_data$PATIENT_ID[combined_data$label==0] %in% CV_ids$test_ids[[i]])))
+  #  print(paste(sum(combined_data$PATIENT_ID[combined_data$label==1] %in% CV_ids$train_ids[[i]]), sum(combined_data$PATIENT_ID[combined_data$label==0] %in% CV_ids$train_ids[[i]])))
+  #} 
   #Run CV including freq and DD
-  res <- run_cross_validation(combined_model, full_results_dir, 'freq_dd', 
+  if (lachlan_data) {
+    suffix='_lachlan'
+    }else {suffix = ''}
+  res <- run_cross_validation(combined_model, full_results_dir, paste0('freq_dd', suffix),
                               test_indices = CV_indices$test_indices, 
                               train_indices = CV_indices$train_indices)
   #Run CV including freq ONLY
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label|AGE|GENDER')),
-                                   full_results_dir, 'freq', 
+                                   full_results_dir, paste0('freq',suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   #Run CV including DD ONLY
   res_dd <- run_cross_validation(dplyr::select(combined_model, matches('DT_DIFF|label|AGE|GENDER')),
-                                 full_results_dir, 'dd', 
+                                 full_results_dir, paste0('dd',suffix),
                                  test_indices = CV_indices$test_indices, 
                                  train_indices = CV_indices$train_indices)
   
   
   #Run CV including dd/freq ONLY
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|DT_DIFF|label')),
-                                   full_results_dir, 'freq_dd_only', 
+                                   full_results_dir, paste0('freq_dd_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('DT_DIFF|label')),
-                                   full_results_dir, 'dd_only', 
+                                   full_results_dir, paste0('dd_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label')),
-                                   full_results_dir, 'freq_only', 
+                                   full_results_dir, paste0('freq_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
 }

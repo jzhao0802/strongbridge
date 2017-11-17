@@ -62,7 +62,14 @@ all_codes <- sub('_AVG_CLAIM_CNT', '', colnames(df_all))
 exclude <- c("test_patient_id","index_date","lookback_date", "AGE","GENDER", 'label', 'PATIENT_ID', 'subset')
 all_codes <- all_codes[!(all_codes%in% exclude)]
 matched_13_check <- c()
+tot_failed <- as.list(rep(0,length(all_codes)))
+removed <- as.list(rep(0,length(all_codes)))
+tot_patients<- as.list(rep(0,length(all_codes)))
+#removed <- list()
+#tot_patients <- list()
+i <- 0
 for (code in all_codes){
+  i <- i + 1
   #CONSTRUCT NAMES FOR EXP_DT, FREQ AND COUNT COLUMNS
   last <- paste0(code, '_LAST_EXP_DT')
   last_dd <- paste0(code, '_LAST_EXP_DT_DIFF')
@@ -81,9 +88,9 @@ for (code in all_codes){
   #VARIABLE HAS FIRST AND LAST EXP > 365 DAYS FROM INDEX?
   both_gt_12 <- df_all[last_dd] > 365 & df_all[first_dd] > 365
   #VARIABLE HAS FIRST EXP > 365, BUT LAST EXP <= 365 DAYS FROM INDEX?
-  first_gt_12 <- df_all[last_dd] < 365 & df_all[first_dd] > 365
+  first_gt_12 <- df_all[last_dd] <= 365 & df_all[first_dd] > 365
   #VARIABLE HAS FIRST AND LAST EXP <= 365 DAYS FROM INDEX?
-  first_lt_12 <- df_all[last_dd] < 365 & df_all[first_dd] < 365
+  first_lt_12 <- df_all[last_dd] <= 365 & df_all[first_dd] <= 365
 
   #THESE FAIL:
   #first_gt_12 <- df_all[last] <= 365 & df_all[first] > 365
@@ -95,7 +102,6 @@ for (code in all_codes){
   first_lt_12[is.na(first_lt_12)] <- F
   
   #RUN TESTS
-  
 # CHECK 1 -- ---------------------------------------------------
   if (any(both_gt_12)){
     #SELECT PATIENTS THAT FALL INTO GROUPS FROM EACH DF
@@ -126,7 +132,9 @@ for (code in all_codes){
     matched_13 <- all(df_13_dates_sel_patient[first]==df_all_dates_sel_patient[first])
     matched_13_check <- c(matched_13_check, matched_13)
     print (paste('CHECK 1 PASSED?', (freq_passed & dates_passed & counts_passed)))
-    if (!(freq_passed & dates_passed & counts_passed)) break
+    #if (!(freq_passed & dates_passed & counts_passed)) break
+    #if (!(freq_passed & dates_passed & counts_passed)) tot_failed <- tot_failed + 1
+
     print (paste('13 month first same?', matched_13 ))
   } 
   
@@ -151,14 +159,17 @@ for (code in all_codes){
     #Expect first date same for df_13, last date same for df_12
     #dates_passed <- all(df_all_dates_sel_patient[last] == df_12_dates_sel_patient[last] )
     
-    count_passed <- all(df_all_counts_sel_patient > df_13_counts_sel_patient & df_all_counts_sel_patient > df_12_counts_sel_patient & ((df_13_counts_sel_patient + df_12_counts_sel_patient) == df_all_counts_sel_patient) || ((df_13_counts_sel_patient + df_12_counts_sel_patient + 1) == df_all_counts_sel_patient)) 
+    count_passed <- all(df_all_counts_sel_patient > df_13_counts_sel_patient & df_all_counts_sel_patient > df_12_counts_sel_patient & ((df_13_counts_sel_patient + df_12_counts_sel_patient) == df_all_counts_sel_patient)) 
     #Expect first date same for df_13, last date same for df_12
     dates_passed <- all(df_all_dates_sel_patient[first] == df_13_dates_sel_patient[first] & df_all_dates_sel_patient[last] == df_12_dates_sel_patient[last] )
     matched_13 <- all(df_13_dates_sel_patient[first]==df_all_dates_sel_patient[first])
     matched_13_check <- c(matched_13_check, matched_13)
     passed <- (dates_passed & count_passed)
     print (paste('CHECK 2 PASSED?', (dates_passed & count_passed)))
-    if (is.na(passed) | !passed) break
+    #if (is.na(passed) | !passed) break
+    if (is.na(passed) | !passed) tot_failed[[i]] <- sum((df_13_counts_sel_patient + df_12_counts_sel_patient) != df_all_counts_sel_patient)
+    if (is.na(passed)) removed[[i]] <- sum(is.na(df_12_dates_sel_patient[first]))
+    tot_patients[[i]] <- length(patients_first)
     
     print (paste('13 month first same?', matched_13 ))
   }  
@@ -195,7 +206,11 @@ for (code in all_codes){
     counts_passed <- all((df_all_counts_sel_patient == df_12_counts_sel_patient) & df_13_counts_sel_patient == 0)
     passed <- (dates_passed & count_passed & counts_passed) 
     print (paste('CHECK 3 PASSED?', (freq_passed & dates_passed & counts_passed & dd_passed)))
-    if (is.na(passed) | !passed) break
+    #if (is.na(passed) | !passed) break
+    #if (is.na(passed) | !passed)   tot_failed <- tot_failed + 1
+    if (is.na(passed) | !passed) tot_failed[[i]] <- tot_failed[[i]] + sum((df_13_counts_sel_patient + df_12_counts_sel_patient) != df_all_counts_sel_patient)
+    if (is.na(passed)) removed[[i]] <- removed[[i]] + sum(is.na(df_12_dates_sel_patient[first]))
+    tot_patients[[i]] <- tot_patients[[i]] + length(patients_first)
   }
   
   #Check if any first exposure dates in cohort 13+ are before first exposure dates from original dataset - will tell us if matched data was used as the basis to create the 13+month neg cohort

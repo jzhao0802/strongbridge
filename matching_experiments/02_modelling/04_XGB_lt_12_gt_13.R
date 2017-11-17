@@ -18,7 +18,7 @@ source('F:/Shaun/Strongbridge/Code/strongbridge_ppp/matching_experiments/02_mode
 data_dir <- "F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/"
 model_data_dir <- "F:/Projects/Strongbridge/data/matching_experiments/02_modelling/"
 results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
-cohort_dir <- '02_gt_13_months_train/'
+cohort_dir <- '03_lt_12_gt_13_months_train/'
 #cohort_dir <- '01_matched_train_unmatched_test/'
 test_strat <- '1_1000_unmatched_test/'
 full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
@@ -144,9 +144,9 @@ if (standard_CV) {
                                        CV_ids$test_ids)
   
   #Quick final QC
-  pos_val_check <- palab::positive_values_check(combined_model, suffix='AVG_CLAIM_CNT')
-  pos_val_check_dd <- palab::positive_values_check(combined_model, suffix='DIFF')
-  palab::time_units_check(combined_model[combined_model$label==0,], combined_model[combined_model$label==1,], prefix1='AVG_CLAIM_CNT', prefix2='AVG_CLAIM_CNT', str_function=ends_with)
+  #pos_val_check <- palab::positive_values_check(combined_model, suffix='AVG_CLAIM_CNT_FIXED_12_MONTHS')
+  #pos_val_check_dd <- palab::positive_values_check(combined_model, suffix='DIFF')
+  #palab::time_units_check(combined_model[combined_model$label==0,], combined_model[combined_model$label==1,], prefix1='AVG_CLAIM_CNT', prefix2='AVG_CLAIM_CNT', str_function=ends_with)
   
   
   #Run CV including freq and DD
