@@ -16,9 +16,9 @@ source('F:/Shaun/Strongbridge/Code/strongbridge_ppp/matching_experiments/02_mode
 
 # globals -----------------------------------------------------------------
 
-lachlan_data <- F
+new_indexes <- T
 
-if (lachlan_data){
+if (new_indexes){
   adv_data_dir <- "F:/Projects/Strongbridge/data/modelling/Advanced_model_data/"
   data_dir <- "F:/Projects/Strongbridge/data/modelling/"
   results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
@@ -30,7 +30,11 @@ if (lachlan_data){
   # data in -----------------------------------------------------------------
   
   combined_data <- read_rds(paste0(adv_data_dir,
-                              "05_combined_train_unmatched_test_capped_freq_datediff.rds"))
+                              "05_combined_train_unmatched_test_capped_freq_datediff.rds")) %>%
+    setNames(gsub('EXP_DT$',"EXP_DT_DIFF", names(.))) %>%
+    setNames(gsub('EXP_$',"EXP_DT_DIFF", names(.))) %>%
+    setNames(gsub('EXP$',"EXP_DT_DIFF", names(.)))
+  
 } else {
   data_dir <- "F:/Projects/Strongbridge/data/modelling/"
   results_dir <- "F:/Projects/Strongbridge/results/matching_experiments/modelling/"
@@ -132,8 +136,8 @@ if (standard_CV){
   #  print(paste(sum(combined_data$PATIENT_ID[combined_data$label==1] %in% CV_ids$train_ids[[i]]), sum(combined_data$PATIENT_ID[combined_data$label==0] %in% CV_ids$train_ids[[i]])))
   #} 
   #Run CV including freq and DD
-  if (lachlan_data) {
-    suffix='_lachlan'
+  if (new_indexes) {
+    suffix='_new_indexes'
     }else {suffix = ''}
   res <- run_cross_validation(combined_model, full_results_dir, paste0('freq_dd', suffix),
                               test_indices = CV_indices$test_indices, 

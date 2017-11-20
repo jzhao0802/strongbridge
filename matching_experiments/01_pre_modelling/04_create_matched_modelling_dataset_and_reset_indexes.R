@@ -1,5 +1,7 @@
 library('tidyverse')
 library('dplyr')
+rm(list=ls())
+gc()
 base_dir <- 'F:/Projects/Strongbridge/data/raw_data_cohorts/'
 output_dir <- 'F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/'
 
@@ -21,12 +23,14 @@ df_test_negs$index_date <- lubridate::mdy(df_test_negs$index_date)
 
 
 df <- df[df$subset == 'train_neg' | df$subset == 'pos',]
+df$index_date <- lubridate::ymd(df$index_date)
 #df$subset <- NULL
 
 df <- df %>%
   dplyr::mutate(PATIENT_ID = as.numeric(PATIENT_ID)) %>%
   dplyr::arrange(PATIENT_ID)
-  
+
+df_neg <- df[df$label==0,]
 #For original study, index dates were moved to be date of most recent last_expd (or kept the same if this was > 1 month away from original index date)
 #Need to reset to original index dates and re-calculate date differences
 #Do this ONLY FOR NEGATIVES!
@@ -35,13 +39,12 @@ df_12_dates <- readRDS(paste(base_dir, '03_Cohorts_by_variable_type_12_months', 
   dplyr::arrange(PATIENT_ID)
 
 df_12_dates$index_date <- lubridate::mdy(df_12_dates$index_date)
-#df$index_date_2 <- lubridate::mdy(df_12_dates$index_date)
-df$index_date <- lubridate::ymd(df$index_date)
-df[colnames(df)[grepl('EXP_DT', colnames(df))]][df$label == 0,] <- df[colnames(df)[grepl('EXP_DT', colnames(df))]][df$label == 0,] + as.numeric(df_12_dates$index_date - df$index_date[df$label == 0])
-df$index_date[df$label == 0] <- df$index_date_2
+df_neg[colnames(df_neg)[grepl('EXP_DT', colnames(df_neg))]] <- df_neg[colnames(df_neg)[grepl('EXP_DT', colnames(df_neg))]] + as.numeric(df_12_dates$index_date - df_neg$index_date)
+df_neg$index_date <- df_12_dates$index_date
 
-#Recombined with testing negatives
-df <- dplyr::bind_rows(df, df_test_negs)
+pos_val_check_dd <- palab::positive_values_check(df_neg, suffix='DIFF')
+#Recombined with testing negatives and positives
+df <- dplyr::bind_rows(df[df$label==1,], df_neg, df_test_negs)
 
 #Save output dataset
 

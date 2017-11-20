@@ -13,7 +13,7 @@ raw_dir <- "F:/Projects/Strongbridge/data/raw_data_cohorts/03_Cohorts_by_variabl
 output_dir <- "F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/01_lte_12_months_train/"
 
 #raw_dir <- "F:/Projects/Strongbridge/data/raw_data_cohorts/05_Cohorts_by_variable_type_13_months/"
-#output_dir <- "F:/Projects/Strongbridge/data/matching_experiments/pre_modelling/02_gt_13_months_train/"
+#output_dir <- "F:/Projects/Strongbridge/data/matching_experiments/01_pre_modelling/02_gt_13_months_train/"
 # Raw modelling data in  --------------------------------------------------
 
 raw_neg_freq <- read_rds(paste0(raw_dir, "Neg_common_frequencies_MOD_12.rds"))

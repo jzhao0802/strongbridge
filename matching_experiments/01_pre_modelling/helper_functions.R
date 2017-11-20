@@ -77,9 +77,19 @@ two_way_setdiff <- function(x, y, lengths_only = FALSE) {
   return(c(x_no_y, y_no_x))
 }
 
+calculate_s_date_diffs <- function(S_vars, index_date){
+  #S variables - these are in months, need to be recalculated....
+  S_vars_format <- as.data.frame(sapply(S_vars, function(x) { ifelse(is.na(x), NA, paste0(x, "01")) }))
+  S_vars_dates <- as.data.frame(lapply(S_vars_format, ymd))
+  # convert to yearmonths:
+  S_vars_yearmon <- as.data.frame(sapply(S_vars_dates, as.yearmon))
+  # create date differences for these variables:
+  S_date_diffs <- as.data.frame(sapply(S_vars_yearmon,
+                                       function(x) {((index_date - x)*12)})) 
+  return(S_date_diffs)
+}
 
-
-topcode_date_diffs <- function(input, cap, label) {
+topcode_date_diffs <- function(input, cap, label, max_val=NULL) {
   # extract index of positives and negatives:
   pos_index <- which(input[[label]] == 1)
   neg_index <- which(input[[label]] == 0)
@@ -87,16 +97,26 @@ topcode_date_diffs <- function(input, cap, label) {
   input[[label]] <- NULL
   # cap variables:
   capped <- sapply(input, function(x) { 
+    if (all(is.na(x))) {
+      return(x)
+    }
     # segregate the vector into positives and negatives:
     pos <- x[pos_index]
     neg <- x[neg_index]
     # work out which class has the higher cap:
-    quant_pos <- stats::quantile(pos, cap, na.rm = TRUE)
-    quant_neg <- stats::quantile(neg, cap, na.rm = TRUE)
+    
+    quant_pos <- stats::quantile(pos, cap, na.rm = TRUE)[[1]]
+    quant_neg <- stats::quantile(neg, cap, na.rm = TRUE)[[1]]
     quant <- max(quant_pos, quant_neg, na.rm = TRUE)
     
+    
+    if ((!is.null(max_val)) && quant > max_val) {
+      quant <- max_val
+    }
     # set anything in the dataset above this value to this value
-    x[x > quant] <- quant
+    if (quant != -Inf) {
+      x[x > quant] <- quant
+    }
     
     return(x)
   })

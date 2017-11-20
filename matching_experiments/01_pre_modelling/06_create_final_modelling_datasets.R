@@ -1,3 +1,5 @@
+rm(list=ls())
+gc()
 library(tidyverse)
 
 #This script extracts only features used for modelling in initial Strongbridge experiment by matching features in 12/13 month cohorts to original dataset
