@@ -1,8 +1,16 @@
+
+#  ------------------------------------------------------------------------
+# Strongbridge scoring summaries
+#  ------------------------------------------------------------------------
+
+results_dir <- "F:/Projects/Strongbridge/results/scoring/"
+model_dir <- "F:/Projects/Strongbridge/results/modelling/XGBOOST_advanced/02_XGB_optimal_HP/"
+
 #  ------------------------------------------------------------------------
 #   Sum all counts from all chunks
 #  ------------------------------------------------------------------------
 
-num_chunks = c(1:127)
+num_chunks = c(1:128)
 counts <- vector("list") 
 
 counts[[1]]<- read_csv(paste0(results_dir, "C", str_pad(1, 3, pad = "0"), "_score_sample_counts.csv"))
@@ -22,7 +30,7 @@ for (i in num_chunks[-1]) {
 }
 
 write.csv(all_counts, 
-          paste0(results_dir, "all_counts_127_exluding_ppp_codes.csv")
+          paste0(results_dir, "all_counts_128_minus_under_24_month_lookback_ppp_patients.csv")
 )
 
 
@@ -42,6 +50,7 @@ for (i in num_chunks) {
 
 total_vec <- unlist(total)
 total_sum <- sum(total_vec)
+
 #  ------------------------------------------------------------------------
 #   Count of dirty/clean ppp 
 #  ------------------------------------------------------------------------
@@ -95,7 +104,7 @@ for (i in num_chunks) {
 
 ppp_counts <- as.data.frame(counts_ppp[[128]])
 
-write_csv(ppp_counts, paste0(results_dir, "clean_dirty_ppp_counts.csv"))
+write_csv(ppp_counts, paste0(results_dir, "clean_dirty_ppp_counts_minus_under_24_month_lookback.csv"))
 
 #  ------------------------------------------------------------------------
 #   Patient profiles
@@ -114,4 +123,8 @@ for (i in num_chunks[-1]) {
 }
 
 profiles_all <- arrange(profiles_all, desc(prob.1))
-write.csv(profiles_all, paste0(results_dir, "top_10_patient_profiles_128.csv"))
+profiles_top_10 <- profiles_all[1:10,]
+write.csv(profiles_all, paste0(results_dir, "each_chunk_top_10_patient_profiles_128_minus_under_24_months_lookback.csv"))
+write.csv(profiles_top_10, paste0(results_dir, "overall_top_10_patient_profiles_128_minus_under_24_months_lookback.csv"))
+
+
