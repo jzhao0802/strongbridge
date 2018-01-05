@@ -11,19 +11,20 @@ drop <- c("-PATIENT_ID", "-test_patient_id", "-index_date", "-lookback_date")
 
 df_num <- df %>% mutate_if(is.character, as.numeric) %>% mutate(label = as.factor(label)) %>% select_(.dots = drop)
 
-which(sapply(df_num, class) == "character")
 
-str(df_num)
 dir <- "F:/Projects/Strongbridge/data/modelling/"
+# load in custom indices
 train_indices <- read_rds(paste0(dir, "train_indices.rds"))
 test_indices <- read_rds(paste0(dir, "test_indices.rds"))
 str(train_indices)
 str(test_indices)                                                   
 
+# look at table of outcome variable for each set of indices
 lapply(test_indices, function(x) { table(df_num$label[x]) })                         
 lapply(train_indices, function(x) { table(df_num$label[x])})
 
 
+# mlr pipeline ------------------------------------------------------------
 dataset <- makeClassifTask(id = "Strongbridge adv model data", data = df_num, 
                            target = "label", positive = 1)
 
@@ -50,7 +51,7 @@ ls_pr_measure <- list(perf_make_pr_measure(5, 'pr5'),
 n_predictors <-  c(400, 200, 100, 50, 25, 10, 5)
 ls_models <- plotting_acc_vs_comp(learner, dataset, rin, n_predictors, ls_pr_measure, linear_x_axis = FALSE, models = TRUE)
 
-# extract variable stems
+# extract variable stems to give number of predictors required
 features <- ls_models$`100`$models[[1]]$features
 ends <- paste0(c('_LAST_EXP_DT', '_FIRST_EXP_DT', '_AVG_CLAIM_CNT', "_FIRST_EXP", "_LAST_EXP_", "_AVG_CLAIM"), collapse = "|")
 features <- unique(gsub(pattern = ends, replacement = "", x = features))
