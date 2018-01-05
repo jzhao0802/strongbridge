@@ -3,6 +3,8 @@
 # PRELIMINARY MODELLING - XGBOOST FREQUENCIES ONLY
 #  ------------------------------------------------------------------------
 
+rm(list = ls())
+gc()
 library(tidyverse)
 library(mlr)
 library(xgboost)
@@ -23,8 +25,14 @@ full_results_dir <- paste0(results_dir, test_strat, cohort_dir)
 modelling_data_dir <- paste0('F:/Projects/Strongbridge/data/matching_experiments/02_modelling/', test_strat)
 
 # Data in -----------------------------------------------------------------
+new_indexes <- T
 
-combined_data <- readRDS(paste0(data_dir, cohort_dir, "02_combined_freq_datediff_topcoded.rds")) %>%
+if (new_indexes) {
+  suffix <- '_new_indexes'  
+} else {
+  suffix <- ''
+}
+combined_data <- readRDS(paste0(data_dir, cohort_dir, "02_combined_freq_datediff_topcoded", suffix, ".rds")) %>%
   dplyr::select(-contains('.1'))
 
 combined_data$index_date <- lubridate::mdy(combined_data$index_date)
@@ -148,34 +156,33 @@ if (standard_CV) {
   
   
   #Run CV including freq and DD
-  res <- run_cross_validation(combined_model, full_results_dir, 'freq_dd', 
+  res <- run_cross_validation(combined_model, full_results_dir, paste0('freq_dd', suffix),
                               test_indices = CV_indices$test_indices, 
                               train_indices = CV_indices$train_indices)
   #Run CV including freq ONLY
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label|AGE|GENDER')),
-                                   full_results_dir, 'freq', 
+                                   full_results_dir, paste0('freq', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   #Run CV including DD ONLY
   res_dd <- run_cross_validation(dplyr::select(combined_model, matches('DT_DIFF|label|AGE|GENDER')),
-                                 full_results_dir, 'dd', 
+                                 full_results_dir, paste0('dd', suffix),
                                  test_indices = CV_indices$test_indices, 
                                  train_indices = CV_indices$train_indices)
-  
   #Run CV including dd/freq ONLY
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|DT_DIFF|label')),
-                                   full_results_dir, 'freq_dd_only', 
+                                   full_results_dir, paste0('freq_dd_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('DT_DIFF|label')),
-                                   full_results_dir, 'dd_only', 
+                                   full_results_dir, paste0('dd_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
   
   res_freq <- run_cross_validation(dplyr::select(combined_model, matches('AVG_CLAIM|label')),
-                                   full_results_dir, 'freq_only', 
+                                   full_results_dir, paste0('freq_only', suffix),
                                    test_indices = CV_indices$test_indices, 
                                    train_indices = CV_indices$train_indices)
 }
